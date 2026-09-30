@@ -30,6 +30,15 @@ class User extends Authenticatable implements FilamentUser
     ];
 
     /**
+     * Mirrors the column default so new, unsaved-then-saved models expose it.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'is_super_admin' => false,
+    ];
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
