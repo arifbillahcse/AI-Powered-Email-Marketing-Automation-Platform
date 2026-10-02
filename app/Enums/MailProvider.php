@@ -68,6 +68,14 @@ enum MailProvider: string implements HasLabel
         };
     }
 
+    /**
+     * Form state may hold the enum itself or its string value.
+     */
+    public static function fromState(mixed $state): ?self
+    {
+        return $state instanceof self ? $state : self::tryFrom((string) $state);
+    }
+
     public static function guessFromSmtpHost(?string $host): self
     {
         $host = strtolower((string) $host);

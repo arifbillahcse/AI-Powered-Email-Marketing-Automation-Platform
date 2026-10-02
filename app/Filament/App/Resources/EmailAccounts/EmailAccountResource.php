@@ -79,15 +79,15 @@ class EmailAccountResource extends Resource
                     ->default(MailProvider::Google->value)
                     ->required()
                     ->live()
-                    ->afterStateUpdated(function (?string $state, Set $set): void {
-                        foreach (MailProvider::tryFrom((string) $state)?->preset() ?? [] as $field => $value) {
+                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                        foreach (MailProvider::fromState($state)?->preset() ?? [] as $field => $value) {
                             $set($field, $value);
                         }
                     })
                     ->columnSpanFull(),
                 Callout::make('Before you connect')
-                    ->description(fn (Get $get): ?string => MailProvider::tryFrom((string) $get('provider'))?->setupHint())
-                    ->visible(fn (Get $get): bool => filled(MailProvider::tryFrom((string) $get('provider'))?->setupHint()))
+                    ->description(fn (Get $get): ?string => MailProvider::fromState($get('provider'))?->setupHint())
+                    ->visible(fn (Get $get): bool => filled(MailProvider::fromState($get('provider'))?->setupHint()))
                     ->info()
                     ->columnSpanFull(),
                 TextInput::make('email')

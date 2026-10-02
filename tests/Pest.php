@@ -27,6 +27,9 @@ function actingInWorkspace(?User $user = null, WorkspaceRole $role = WorkspaceRo
     test()->actingAs($user);
     Filament::setCurrentPanel('app');
     Filament::setTenant($workspace);
+    // Real requests boot the panel in middleware; this registers the tenancy
+    // scopes and observers that attach new records to the workspace.
+    Filament::bootCurrentPanel();
 
     return $workspace;
 }

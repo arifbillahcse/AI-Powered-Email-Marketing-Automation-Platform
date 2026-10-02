@@ -60,15 +60,20 @@ class SendingDomain extends Model
 
     public static function findOrCreateFor(int $workspaceId, string $name): self
     {
-        $domain = static::query()->firstOrNew([
-            'workspace_id' => $workspaceId,
-            'name' => Str::lower($name),
-        ]);
+        $name = Str::lower($name);
 
-        if (! $domain->exists) {
-            $domain->workspace_id = $workspaceId;
-            $domain->save();
+        $domain = static::query()
+            ->where('workspace_id', $workspaceId)
+            ->where('name', $name)
+            ->first();
+
+        if ($domain) {
+            return $domain;
         }
+
+        $domain = new static(['name' => $name]);
+        $domain->workspace_id = $workspaceId;
+        $domain->save();
 
         return $domain;
     }
