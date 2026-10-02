@@ -2,8 +2,8 @@
 
 use App\Filament\App\Auth\Register;
 use App\Models\User;
+use Filament\Auth\Notifications\VerifyEmail;
 use Filament\Facades\Filament;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 
