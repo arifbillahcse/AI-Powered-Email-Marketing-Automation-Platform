@@ -2,6 +2,11 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\App\Auth\Register;
+use App\Filament\App\Tenancy\RegisterWorkspace;
+use App\Filament\App\Tenancy\WorkspaceSettings;
+use App\Models\Workspace;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -31,6 +36,16 @@ class AppPanelProvider extends PanelProvider
             ->id('app')
             ->path('app')
             ->login()
+            ->registration(Register::class)
+            ->passwordReset()
+            ->emailVerification()
+            ->profile()
+            ->multiFactorAuthentication([
+                AppAuthentication::make()->recoverable(),
+            ])
+            ->tenant(Workspace::class, slugAttribute: 'slug')
+            ->tenantRegistration(RegisterWorkspace::class)
+            ->tenantProfile(WorkspaceSettings::class)
             ->brandName(fn (): string => config('app.name'))
             ->colors([
                 'primary' => Color::Indigo,

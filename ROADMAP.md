@@ -21,7 +21,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 
 **Done when:** `docker compose up` works, both panels load, CI is green.
 
-### ⬜ Phase 1: Auth, workspaces and roles
+### ✅ Phase 1: Auth, workspaces and roles
 - Register, login, email verification, password reset, 2FA
 - Workspaces via Filament tenancy, workspace switcher
 - Roles: Owner, Admin, Member, Client (view-only)

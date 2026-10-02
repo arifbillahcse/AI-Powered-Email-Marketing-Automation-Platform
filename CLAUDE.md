@@ -17,7 +17,15 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Providers/Filament/AppPanelProvider.php`: customer panel at `/app`
 - `app/Providers/Filament/AdminPanelProvider.php`: super admin panel at `/admin`
 - `app/Filament/App/**`: customer resources, pages, widgets
+- `app/Filament/App/Tenancy/`: workspace create + settings pages (kept out of
+  `Pages/` so discovery doesn't register them twice)
+- `app/Filament/App/Auth/`: customised auth pages (sign-up)
 - `app/Filament/Admin/**`: super admin resources, pages, widgets
+- `app/Models/Workspace.php`: the tenant; `Membership` (pivot with role),
+  `WorkspaceInvitation` (hashed token, 7-day expiry)
+- `app/Services/Workspaces/TeamManager.php`: all team rules (invite, roles,
+  remove, leave, accept). UI and tests go through it.
+- `app/Enums/WorkspaceRole.php`: Owner, Admin, Member, Client
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme
 - `docs/STYLE_GUIDE.md`: colors, typography, component rules
@@ -31,7 +39,16 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - Queues: `default`, `sending`, `imap`, `ai`, `imports` (see `config/horizon.php`).
   Put jobs on the right queue; never send email synchronously in a request.
 - Encrypt stored secrets (mailbox passwords, API keys) with the `encrypted` cast.
-- Everything customer-owned is scoped to a workspace (from Phase 1 onward).
+- Everything customer-owned is scoped to a workspace: give the model a
+  `workspace_id` and a `workspace()` BelongsTo (Filament tenancy uses it to scope
+  resources). Get the current one with `Filament::getTenant()`.
+- Roles: check `$user->roleIn($workspace)` with `canWrite()` (everyone but
+  Client) for create/edit actions, and `canManageTeam()` (Owner/Admin) for
+  settings and team. Policies wrap these; the Client role is read-only everywhere.
+- Ownership is never assigned through invites or role changes.
+- Models with DB column defaults must mirror them in `$attributes`, or strict
+  mode throws when a freshly created model reads them.
+- Eager load relations used by table columns and actions (lazy loading throws).
 - Keep `Model::shouldBeStrict()` passing: no lazy loading, no silent mass-assignment drops.
 - Compliance is not optional: every campaign email gets an unsubscribe link,
   `List-Unsubscribe` headers, and a suppression check before sending.

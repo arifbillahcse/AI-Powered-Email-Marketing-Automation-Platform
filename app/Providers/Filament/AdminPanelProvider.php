@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -31,6 +32,13 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->passwordReset()
+            ->profile()
+            // Super admins must set up 2FA in production.
+            ->multiFactorAuthentication(
+                [AppAuthentication::make()->recoverable()],
+                isRequired: fn (): bool => app()->isProduction(),
+            )
             ->brandName(fn (): string => config('app.name').' Admin')
             ->colors([
                 'primary' => Color::Slate,

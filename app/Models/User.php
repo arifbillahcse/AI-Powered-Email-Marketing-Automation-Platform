@@ -2,18 +2,31 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\WorkspaceRole;
 use Database\Factories\UserFactory;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthentication;
+use Filament\Auth\MultiFactor\App\Concerns\InteractsWithAppAuthenticationRecovery;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthentication;
+use Filament\Auth\MultiFactor\App\Contracts\HasAppAuthenticationRecovery;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasTenants;
 use Filament\Panel;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, HasTenants, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    use InteractsWithAppAuthentication;
+    use InteractsWithAppAuthenticationRecovery;
 
     /**
      * The attributes that are mass assignable.
@@ -30,12 +43,16 @@ class User extends Authenticatable implements FilamentUser
     ];
 
     /**
-     * Mirrors the column default so new, unsaved-then-saved models expose it.
+     * Mirrors the column defaults so freshly created models expose them
+     * (strict mode throws on attributes that were never loaded).
      *
      * @var array<string, mixed>
      */
     protected $attributes = [
         'is_super_admin' => false,
+        'email_verified_at' => null,
+        'app_authentication_secret' => null,
+        'app_authentication_recovery_codes' => null,
     ];
 
     /**
@@ -69,5 +86,47 @@ class User extends Authenticatable implements FilamentUser
             'app' => true,
             default => false,
         };
+    }
+
+    /**
+     * @return BelongsToMany<Workspace, $this, Membership, 'membership'>
+     */
+    public function workspaces(): BelongsToMany
+    {
+        return $this->belongsToMany(Workspace::class, 'memberships')
+            ->using(Membership::class)
+            ->as('membership')
+            ->withPivot('id', 'role')
+            ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Membership, $this>
+     */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    /**
+     * @return Collection<int, Workspace>
+     */
+    public function getTenants(Panel $panel): Collection
+    {
+        return $this->workspaces()->orderBy('name')->get();
+    }
+
+    public function canAccessTenant(Model $tenant): bool
+    {
+        return $tenant instanceof Workspace
+            && $this->memberships()->where('workspace_id', $tenant->getKey())->exists();
+    }
+
+    public function roleIn(Workspace $workspace): ?WorkspaceRole
+    {
+        return $this->memberships()
+            ->where('workspace_id', $workspace->getKey())
+            ->first()
+            ?->role;
     }
 }

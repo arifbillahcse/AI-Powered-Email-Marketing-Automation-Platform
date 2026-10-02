@@ -22,12 +22,36 @@ docker compose exec app npm run build
 
 | URL | What |
 |---|---|
-| http://localhost:8000/app | Customer app (seeded: `demo@example.com` / `password`) |
+| http://localhost:8000/app | Customer app (seeded below) |
 | http://localhost:8000/admin | Super admin (seeded: `admin@example.com` / `password`) |
 | http://localhost:8000/horizon | Queue dashboard (super admins) |
 | http://localhost:8025 | Mailpit (catches all local email) |
 
+Seeded accounts (password `password` for all):
+
+| Email | Role |
+|---|---|
+| `demo@example.com` | Owner of "Demo Agency" and "Second Client Co" |
+| `teammate@example.com` | Member of "Demo Agency" |
+| `client@example.com` | Client (view-only) in "Demo Agency" |
+| `admin@example.com` | Platform super admin (`/admin`) |
+
 Create a real super admin with `php artisan app:create-super-admin`.
+
+## Workspaces and roles
+
+Every customer works inside a **workspace** (`/app/{workspace}`), and can belong
+to several and switch between them from the sidebar menu.
+
+| Role | Can do |
+|---|---|
+| Owner | Everything. Can't be removed or leave. |
+| Admin | Manage team, roles and workspace settings, plus everything a Member can |
+| Member | Run campaigns, manage leads, reply |
+| Client | View only |
+
+Invitations are emailed (queued) and expire after 7 days. Users can turn on
+two-factor authentication (authenticator app + recovery codes) from their profile.
 
 ## Quick start (without Docker)
 
