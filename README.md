@@ -50,6 +50,20 @@ to several and switch between them from the sidebar menu.
 | Member | Run campaigns, manage leads, reply |
 | Client | View only |
 
+## Email accounts and domains
+
+Infrastructure → **Email accounts** connects mailboxes over SMTP/IMAP (Google,
+Microsoft 365 and Zoho presets, or any custom server). Saving runs a connection
+test; "Send test email" sends a real message and reports back in the bell menu.
+Each mailbox has its own daily limit, random gap between emails, send window
+and days, signature and optional custom tracking domain.
+
+Infrastructure → **Domains** checks MX, SPF, DKIM and DMARC for every sending
+domain (daily, and on demand) and shows copy-paste DNS records to fix problems.
+
+Locally, the seeded mailbox sends through Mailpit. Mailpit has no IMAP, so its
+connection test reports an IMAP error; that's expected.
+
 Invitations are emailed (queued) and expire after 7 days. Users can turn on
 two-factor authentication (authenticator app + recovery codes) from their profile.
 

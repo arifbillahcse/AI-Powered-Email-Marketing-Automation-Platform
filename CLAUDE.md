@@ -26,6 +26,15 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Services/Workspaces/TeamManager.php`: all team rules (invite, roles,
   remove, leave, accept). UI and tests go through it.
 - `app/Enums/WorkspaceRole.php`: Owner, Admin, Member, Client
+- `app/Models/EmailAccount.php` (mailboxes) and `SendingDomain.php` (DNS health)
+- `app/Services/Mail/`: `MailboxTransportFactory` (the one place SMTP transports
+  are built; Phase 5 sends through it), `MailboxConnectionTester`, `Imap/ImapProbe`,
+  `HostGuard` (blocks private/internal hosts)
+- `app/Services/Dns/`: `DnsResolver` interface (fake it in tests with
+  `Tests\Fakes\FakeDnsResolver`), `DomainHealthChecker`, `TrackingDomainVerifier`
+- `app/Policies/Concerns/AuthorizesWorkspaceRecords.php`: default policy for
+  workspace-owned records (members view, everyone but Clients edit)
+- `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme
 - `docs/STYLE_GUIDE.md`: colors, typography, component rules
@@ -50,6 +59,11 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   mode throws when a freshly created model reads them.
 - Eager load relations used by table columns and actions (lazy loading throws).
 - Keep `Model::shouldBeStrict()` passing: no lazy loading, no silent mass-assignment drops.
+- Every SMTP/IMAP connection to a user-supplied host goes through `HostGuard`.
+  Never connect to a user-supplied host without it (SSRF).
+- Never put mailbox passwords in form state, logs, notifications or `toArray()`.
+- Long or user-waited work that talks to the outside world (sending, DNS at
+  scale) goes on a queue and reports back with a Filament database notification.
 - Compliance is not optional: every campaign email gets an unsubscribe link,
   `List-Unsubscribe` headers, and a suppression check before sending.
 

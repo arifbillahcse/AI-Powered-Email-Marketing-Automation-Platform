@@ -122,10 +122,10 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             && $this->memberships()->where('workspace_id', $tenant->getKey())->exists();
     }
 
-    public function roleIn(Workspace $workspace): ?WorkspaceRole
+    public function roleIn(Workspace|int $workspace): ?WorkspaceRole
     {
         return $this->memberships()
-            ->where('workspace_id', $workspace->getKey())
+            ->where('workspace_id', $workspace instanceof Workspace ? $workspace->getKey() : $workspace)
             ->first()
             ?->role;
     }

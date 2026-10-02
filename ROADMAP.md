@@ -30,7 +30,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 
 **Done when:** a user can create a workspace, invite a teammate, and switch workspaces with data isolated.
 
-### ⬜ Phase 2: Email accounts and domains
+### ✅ Phase 2: Email accounts and domains
 - Connect a mailbox via SMTP/IMAP, with a connection test
 - Encrypted credential storage
 - Per-inbox: daily limit, min/max delay, send window, sender name, signature

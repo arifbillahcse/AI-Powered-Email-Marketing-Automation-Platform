@@ -96,6 +96,22 @@ class Workspace extends Model
         return $this->hasMany(WorkspaceInvitation::class);
     }
 
+    /**
+     * @return HasMany<EmailAccount, $this>
+     */
+    public function emailAccounts(): HasMany
+    {
+        return $this->hasMany(EmailAccount::class);
+    }
+
+    /**
+     * @return HasMany<SendingDomain, $this>
+     */
+    public function sendingDomains(): HasMany
+    {
+        return $this->hasMany(SendingDomain::class);
+    }
+
     public function addMember(User $user, WorkspaceRole $role): void
     {
         $this->members()->syncWithoutDetaching([

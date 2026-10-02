@@ -46,6 +46,7 @@ class AppPanelProvider extends PanelProvider
             ->tenant(Workspace::class, slugAttribute: 'slug')
             ->tenantRegistration(RegisterWorkspace::class)
             ->tenantProfile(WorkspaceSettings::class)
+            ->databaseNotifications()
             ->brandName(fn (): string => config('app.name'))
             ->colors([
                 'primary' => Color::Indigo,

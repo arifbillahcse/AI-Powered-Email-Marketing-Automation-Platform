@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Enums\MailEncryption;
+use App\Enums\MailProvider;
 use App\Enums\WorkspaceRole;
+use App\Models\EmailAccount;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -45,6 +48,22 @@ class DatabaseSeeder extends Seeder
         $agency->addMember($owner, WorkspaceRole::Owner);
         $agency->addMember($teammate, WorkspaceRole::Member);
         $agency->addMember($client, WorkspaceRole::Client);
+
+        // Sends through Mailpit (http://localhost:8025) inside Docker. Mailpit has
+        // no IMAP, so "Test connection" reports an IMAP error locally; that's expected.
+        EmailAccount::factory()->for($agency)->create([
+            'email' => 'outreach@demo-agency.test',
+            'from_name' => 'Demo Outreach',
+            'provider' => MailProvider::Custom,
+            'smtp_host' => 'mailpit',
+            'smtp_port' => 1025,
+            'smtp_encryption' => MailEncryption::None,
+            'smtp_username' => 'outreach@demo-agency.test',
+            'smtp_password' => 'not-checked-by-mailpit',
+            'imap_host' => 'mailpit',
+            'imap_port' => 143,
+            'imap_encryption' => MailEncryption::None,
+        ]);
 
         $second = Workspace::factory()->create([
             'name' => 'Second Client Co',
