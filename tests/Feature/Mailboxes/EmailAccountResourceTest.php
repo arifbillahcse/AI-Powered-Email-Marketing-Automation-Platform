@@ -156,9 +156,13 @@ it('fills server settings from a provider preset', function () {
 });
 
 it('only lists the current workspace\'s mailboxes', function () {
+    // Created before entering the workspace: inside it, Filament attaches
+    // every new record to the current workspace.
+    $theirs = EmailAccount::factory()->create();
     $workspace = actingInWorkspace();
     $mine = EmailAccount::factory()->for($workspace)->create();
-    $theirs = EmailAccount::factory()->create();
+
+    expect($theirs->refresh()->workspace_id)->not->toBe($workspace->id);
 
     Livewire::test(ListEmailAccounts::class)
         ->assertCanSeeTableRecords([$mine])

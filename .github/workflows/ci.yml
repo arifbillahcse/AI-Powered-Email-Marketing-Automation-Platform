@@ -11,8 +11,19 @@ concurrency:
 
 jobs:
   ci:
+    name: ci (${{ matrix.db }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    # PostgreSQL for Docker/VPS installs, MySQL for cPanel/shared hosting.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - db: pgsql
+            port: 5432
+          - db: mysql
+            port: 3306
 
     services:
       postgres:
@@ -25,6 +36,17 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U outreach -d testing"
           --health-interval 5s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: testing
+          MYSQL_USER: outreach
+          MYSQL_PASSWORD: secret
+          MYSQL_ROOT_PASSWORD: secret
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -psecret"
+          --health-interval 5s --health-timeout 5s --health-retries 20
       redis:
         image: redis:7
         ports: ['6379:6379']
@@ -33,9 +55,9 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
 
     env:
-      DB_CONNECTION: pgsql
+      DB_CONNECTION: ${{ matrix.db }}
       DB_HOST: 127.0.0.1
-      DB_PORT: 5432
+      DB_PORT: ${{ matrix.port }}
       DB_DATABASE: testing
       DB_USERNAME: outreach
       DB_PASSWORD: secret
@@ -47,7 +69,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: bcmath, gd, intl, pcntl, pdo_pgsql, redis, zip
+          extensions: bcmath, gd, intl, pcntl, pdo_mysql, pdo_pgsql, redis, zip
           coverage: none
 
       - uses: actions/setup-node@v4
@@ -67,7 +89,7 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
 
       - name: Upload generated lockfiles
-        if: always()
+        if: always() && matrix.db == 'pgsql'
         uses: actions/upload-artifact@v4
         with:
           name: lockfiles
@@ -87,7 +109,7 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Migrate (Postgres)
+      - name: Migrate
         run: php artisan migrate --force
 
       - name: Tests

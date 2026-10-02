@@ -58,4 +58,22 @@ return [
         'cname_target' => env('TRACKING_CNAME_TARGET', 'track.'.parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Queue processing
+    |--------------------------------------------------------------------------
+    |
+    | With Redis + Horizon (VPS/Docker), Horizon runs the workers. On shared
+    | hosting (cPanel) there's no Redis and no long-running processes, so set
+    | QUEUE_RUN_FROM_SCHEDULER=true: the every-minute cron then works the
+    | queues (database driver) for up to ~55 seconds per run.
+    |
+    */
+
+    'queue' => [
+        'run_from_scheduler' => (bool) env('QUEUE_RUN_FROM_SCHEDULER', false),
+        // Highest priority first.
+        'queues' => 'sending,imap,default,ai,imports',
+    ],
+
 ];

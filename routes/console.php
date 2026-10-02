@@ -2,8 +2,23 @@
 
 use Illuminate\Support\Facades\Schedule;
 
-// Horizon metrics for the queue dashboard.
-Schedule::command('horizon:snapshot')->everyFiveMinutes();
+// Horizon metrics for the queue dashboard (Redis setups only).
+Schedule::command('horizon:snapshot')
+    ->everyFiveMinutes()
+    ->when(fn (): bool => config('queue.default') === 'redis');
+
+// Shared hosting (cPanel): no long-running workers, so the cron-driven
+// scheduler works the queues for just under a minute, every minute.
+Schedule::command('queue:work', [
+    '--queue='.config('outreach.queue.queues'),
+    '--stop-when-empty',
+    '--max-time=55',
+    '--tries=3',
+    '--timeout=50',
+])
+    ->everyMinute()
+    ->withoutOverlapping(2)
+    ->when(fn (): bool => (bool) config('outreach.queue.run_from_scheduler'));
 
 // Housekeeping.
 Schedule::command('queue:prune-failed --hours=168')->daily();

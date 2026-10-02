@@ -39,6 +39,16 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `resources/css/filament/app/theme.css`: customer panel theme
 - `docs/STYLE_GUIDE.md`: colors, typography, component rules
 
+## Hosting targets
+The app must run on **both** Docker/VPS (PostgreSQL + Redis + Horizon) and
+**cPanel shared hosting** (MySQL/MariaDB, database queue/cache/sessions, no
+Redis, no long-running processes, no Node.js). CI tests PostgreSQL and MySQL.
+- No database-specific SQL; use the query builder (both CI legs must pass).
+- No Redis-only features. Rate limiting via `RateLimiter`/`Cache` works on both.
+- Queued jobs must finish well under 50 seconds (cron works the queue for ~55s
+  per minute on cPanel) and be safe to retry. Split long work into small jobs.
+- Deployment guide: `docs/DEPLOY_CPANEL.md`.
+
 ## Conventions
 - Follow the style guide for colors and status badges. Use the semantic Filament
   colors (`primary`, `success`, `warning`, `danger`, `info`, `gray`), never raw hex in PHP.

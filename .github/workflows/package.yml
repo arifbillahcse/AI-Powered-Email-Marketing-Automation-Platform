@@ -1,0 +1,55 @@
+name: Package for cPanel
+
+# Builds a zip you can upload to shared hosting: production Composer
+# dependencies and compiled CSS/JS included, so the server needs neither
+# Node.js nor a Composer install. Download it from the run's "Artifacts".
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          # Match the PHP version selected in cPanel's MultiPHP Manager.
+          php-version: '8.3'
+          extensions: bcmath, gd, intl, pdo_mysql, zip
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install production PHP dependencies
+        run: |
+          if [ -f composer.lock ]; then
+            composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+          else
+            composer update --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+          fi
+
+      - name: Build CSS/JS
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+          npm run build
+
+      - name: Create release zip
+        run: |
+          rm -rf node_modules
+          zip -qr outreach-cpanel.zip . \
+            -x '.git/*' '.github/*' 'tests/*' 'docker/*' 'docker-compose.yml' '.dockerignore' \
+               '.env' 'storage/logs/*.log' 'phpunit.xml' '.editorconfig'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: outreach-cpanel-${{ github.sha }}
+          path: outreach-cpanel.zip
+          retention-days: 30

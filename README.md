@@ -67,6 +67,11 @@ connection test reports an IMAP error; that's expected.
 Invitations are emailed (queued) and expire after 7 days. Users can turn on
 two-factor authentication (authenticator app + recovery codes) from their profile.
 
+## Deploying on cPanel / shared hosting
+
+No Docker, Redis or Node.js needed: see **[docs/DEPLOY_CPANEL.md](docs/DEPLOY_CPANEL.md)**.
+GitHub Actions builds a ready-to-upload zip (Actions → "Package for cPanel").
+
 ## Quick start (without Docker)
 
 Requires PHP 8.4 (pdo_pgsql, redis, intl, zip, gd, bcmath), Composer, Node 22,
