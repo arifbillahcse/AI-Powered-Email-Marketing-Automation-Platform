@@ -60,7 +60,12 @@ class AppPanelProvider extends PanelProvider
             ->darkMode()
             ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth(Width::Full)
-            ->viteTheme('resources/css/filament/app/theme.css')
+            // The custom theme needs a Vite build (public/build). Hosts without
+            // Node.js (cPanel) fall back to Filament's bundled styles instead of a 500.
+            ->when(
+                file_exists(public_path('build/manifest.json')),
+                fn (Panel $panel): Panel => $panel->viteTheme('resources/css/filament/app/theme.css'),
+            )
             ->navigationGroups([
                 'Outreach',
                 'Infrastructure',

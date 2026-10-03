@@ -16,8 +16,12 @@ x-app: &app
     - .:/var/www/html
   env_file: .env
   environment:
+    DB_CONNECTION: pgsql
     DB_HOST: postgres
     REDIS_HOST: redis
+    SESSION_DRIVER: redis
+    CACHE_STORE: redis
+    QUEUE_CONNECTION: redis
     MAIL_HOST: mailpit
   depends_on:
     postgres:
