@@ -77,6 +77,36 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | AI personalization
+    |--------------------------------------------------------------------------
+    |
+    | "Included AI credits" use the platform's own Anthropic key with a monthly
+    | token allowance per workspace. Workspaces can bring their own Anthropic
+    | or OpenAI key instead (no allowance applies).
+    |
+    */
+
+    'ai' => [
+        'platform_api_key' => env('ANTHROPIC_API_KEY'),
+        'platform_model' => env('AI_PLATFORM_MODEL', 'claude-opus-5-5'),
+        'platform_monthly_tokens' => (int) env('AI_PLATFORM_MONTHLY_TOKENS', 2_000_000),
+        'timeout' => (float) env('AI_TIMEOUT', 40),
+        // Leads whose email needs AI content that isn't approved yet are
+        // checked again after this many minutes.
+        'awaiting_review_minutes' => 60,
+        'max_retries' => 0, // the queue retries with backoff instead (jobs must stay under 50s)
+
+        // Claude models offered in settings, with $ per million tokens for
+        // cost estimates (input, output, cache read).
+        'claude_models' => [
+            'claude-opus-5-5' => ['label' => 'Claude Opus 5.5 (best quality)', 'input' => 4.00, 'output' => 20.00, 'cache_read' => 0.20],
+            'claude-sonnet-5-5' => ['label' => 'Claude Sonnet 5.5 (balanced)', 'input' => 2.00, 'output' => 10.00, 'cache_read' => 0.20],
+            'claude-haiku-4-5' => ['label' => 'Claude Haiku 4.5 (fastest, cheapest)', 'input' => 1.00, 'output' => 5.00, 'cache_read' => 0.10],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue processing
     |--------------------------------------------------------------------------
     |

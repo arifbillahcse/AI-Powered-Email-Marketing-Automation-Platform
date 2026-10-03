@@ -160,6 +160,22 @@ class Workspace extends Model
         return $this->hasMany(Campaign::class);
     }
 
+    /**
+     * @return HasMany<AiPromptTemplate, $this>
+     */
+    public function aiPromptTemplates(): HasMany
+    {
+        return $this->hasMany(AiPromptTemplate::class);
+    }
+
+    /**
+     * @return HasMany<AiGeneration, $this>
+     */
+    public function aiGenerations(): HasMany
+    {
+        return $this->hasMany(AiGeneration::class);
+    }
+
     public function addMember(User $user, WorkspaceRole $role): void
     {
         $this->members()->syncWithoutDetaching([

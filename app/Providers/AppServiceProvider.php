@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Ai\TextGeneratorFactory;
 use App\Services\Dns\DnsResolver;
 use App\Services\Dns\DomainHealthChecker;
 use App\Services\Dns\NativeDnsResolver;
@@ -27,6 +28,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ModuleRegistry::class);
 
         $this->app->bind(DnsResolver::class, NativeDnsResolver::class);
+
+        // Tests swap in a factory with a fake HTTP transport for Claude.
+        $this->app->bind(TextGeneratorFactory::class, fn (): TextGeneratorFactory => new TextGeneratorFactory);
 
         $this->app->bind(HostGuard::class, fn (): HostGuard => new HostGuard(
             allowPrivateHosts: (bool) config('outreach.mailboxes.allow_private_hosts'),

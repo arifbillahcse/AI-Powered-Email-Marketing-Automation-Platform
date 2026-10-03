@@ -79,14 +79,18 @@ Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 
 **Done when:** a campaign sends real email at the configured pace and events are recorded.
 
-### ⬜ Phase 6: AI personalization
+### ✅ Phase 6: AI personalization
 - Per-workspace AI provider: BYOK (Claude or OpenAI) or platform credits
+  (Claude via the official Anthropic PHP SDK; monthly token allowance)
 - Prompt templates: first line, full email, subject line
 - Tone, language, length controls
-- Bulk generation on the `ai` queue with progress
-- Review/approve queue: edit, regenerate, approve, reject
-- AI output stored per lead per step, used by the sender
-- Token usage tracking per workspace
+- Bulk generation on the `ai` queue with progress (one short job per lead,
+  retried with backoff on rate limits; notification when the batch is done)
+- Review/approve queue: edit, regenerate, approve, reject (also in bulk)
+- AI output stored per lead per step, used by the sender as `{{ai_first_line}}`,
+  `{{ai_subject}}` and `{{ai_email}}`. Only approved content is sent; launch is
+  blocked and sends wait while required AI content isn't approved
+- Token usage tracking per workspace (with estimated Claude cost)
 
 **Done when:** 500 leads can be personalized, approved, and sent.
 

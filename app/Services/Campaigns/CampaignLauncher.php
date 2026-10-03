@@ -2,12 +2,17 @@
 
 namespace App\Services\Campaigns;
 
+use App\Enums\AiContentType;
 use App\Enums\CampaignStatus;
 use App\Enums\EmailAccountStatus;
 use App\Enums\LeadActivityType;
 use App\Models\Campaign;
+use App\Models\CampaignStep;
 use App\Models\User;
+use App\Services\Ai\AiGenerationService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Number;
 
 /**
  * Launch, pause, resume and stop campaigns, and enroll their audience.
@@ -17,6 +22,8 @@ class CampaignLauncher
 {
     public function __construct(
         protected CampaignAudience $audience,
+        protected TemplateRenderer $renderer,
+        protected AiGenerationService $ai,
     ) {}
 
     /**
@@ -57,6 +64,42 @@ class CampaignLauncher
 
         if ($this->audience->count($campaign) === 0) {
             $problems[] = 'The audience is empty. Add lists or segments with leads that aren\'t suppressed.';
+        } else {
+            array_push($problems, ...$this->aiProblems($campaign, $steps));
+        }
+
+        return $problems;
+    }
+
+    /**
+     * AI variables used without a fallback need approved content for every
+     * lead, or those leads would get a half-empty email.
+     *
+     * @param  Collection<int, CampaignStep>  $steps
+     * @return list<string>
+     */
+    protected function aiProblems(Campaign $campaign, Collection $steps): array
+    {
+        $problems = [];
+
+        foreach ($steps as $step) {
+            $template = ($step->isReplyInThread() ? '' : (string) $step->subject).' '.$step->body;
+
+            foreach ($this->renderer->variablesWithoutFallback($template) as $variable) {
+                $type = AiContentType::fromVariable($variable);
+
+                if (! $type) {
+                    continue;
+                }
+
+                $missing = $this->ai->leadsWithoutApproved($campaign, $step, $type);
+
+                if ($missing > 0) {
+                    $leads = $missing === 1 ? '1 lead has' : Number::format($missing).' leads have';
+                    $problems[] = "Email {$step->position} uses {{{$variable}}}, but {$leads} no approved AI content for it yet. "
+                        ."Generate and approve it with \"AI personalize\", or add a fallback like {{{$variable}|...}}.";
+                }
+            }
         }
 
         return $problems;

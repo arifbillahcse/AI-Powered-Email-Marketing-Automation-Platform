@@ -53,7 +53,14 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Jobs/SendCampaignEmail.php`: sends one step to one lead; pinned to a
   step number, and `email_messages` is unique per (campaign lead, step)
 - `routes/tracking.php`: open pixel, click redirect, unsubscribe (no session/CSRF)
-- `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target
+- `app/Services/Ai/`: `TextGeneratorFactory` → `ClaudeGenerator` (official
+  Anthropic SDK; tests inject a fake PSR-18 client or use `fakeAi()`) or
+  `OpenAiGenerator`; `PromptBuilder` (lead data is untrusted input);
+  `AiGenerationService` (review queue; only *approved* content is sent)
+- `app/Models/AiSetting.php` (encrypted BYOK key), `AiPromptTemplate`,
+  `AiGeneration` (one per lead per step per type), `AiUsage` (tokens)
+- `app/Jobs/DispatchAiGenerations.php` + `GenerateAiContent.php` (`ai` queue)
+- `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target, AI models/prices
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme
 - `docs/STYLE_GUIDE.md`: colors, typography, component rules

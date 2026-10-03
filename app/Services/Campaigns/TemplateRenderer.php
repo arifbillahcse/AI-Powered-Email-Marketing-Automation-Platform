@@ -2,6 +2,8 @@
 
 namespace App\Services\Campaigns;
 
+use Illuminate\Contracts\Support\Htmlable;
+
 /**
  * Renders email templates:
  *
@@ -13,14 +15,15 @@ namespace App\Services\Campaigns;
  * Spintax choices are seeded (per lead + step), so a preview shows exactly
  * what that lead will receive. Variable values are inserted after spintax
  * runs, so lead data can never inject spintax, and are HTML-escaped in
- * HTML mode.
+ * HTML mode. Htmlable values (already-escaped markup, like AI-written
+ * paragraphs) are inserted as-is in HTML mode.
  */
 class TemplateRenderer
 {
     public const VARIABLE_PATTERN = '/\{\{\s*([A-Za-z0-9_]+)\s*(?:\|([^{}]*))?\}\}/';
 
     /**
-     * @param  array<string, scalar|null>  $variables
+     * @param  array<string, scalar|Htmlable|null>  $variables
      */
     public function render(string $template, array $variables, string $seed, bool $html = false): string
     {
@@ -40,7 +43,13 @@ class TemplateRenderer
         // 3. Variables.
         return preg_replace_callback("/\u{E000}(\d+)\u{E001}/u", function (array $match) use ($tokens, $variables, $html): string {
             $token = $tokens[(int) $match[1]];
-            $value = trim((string) ($variables[$token['name']] ?? ''));
+            $raw = $variables[$token['name']] ?? '';
+
+            if ($html && $raw instanceof Htmlable && trim($raw->toHtml()) !== '') {
+                return $raw->toHtml();
+            }
+
+            $value = trim((string) ($raw instanceof Htmlable ? $raw->toHtml() : $raw));
 
             if ($value === '') {
                 $value = trim((string) ($token['fallback'] ?? ''));
@@ -63,10 +72,30 @@ class TemplateRenderer
     }
 
     /**
+     * Variable names used at least once without a fallback.
+     *
+     * @return list<string>
+     */
+    public function variablesWithoutFallback(string $template): array
+    {
+        preg_match_all(self::VARIABLE_PATTERN, $template, $matches, PREG_SET_ORDER);
+
+        $names = [];
+
+        foreach ($matches as $match) {
+            if (trim($match[2] ?? '') === '') {
+                $names[] = strtolower($match[1]);
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    /**
      * Variables used without a fallback that are blank for these values,
      * e.g. ["first_name"] when the lead has no first name.
      *
-     * @param  array<string, scalar|null>  $variables
+     * @param  array<string, scalar|Htmlable|null>  $variables
      * @return list<string>
      */
     public function missingVariables(string $template, array $variables): array
@@ -81,7 +110,10 @@ class TemplateRenderer
             $name = strtolower($match[1]);
             $hasFallback = trim($match[2] ?? '') !== '';
 
-            if (! $hasFallback && trim((string) ($variables[$name] ?? '')) === '') {
+            $value = $variables[$name] ?? '';
+            $value = $value instanceof Htmlable ? $value->toHtml() : (string) $value;
+
+            if (! $hasFallback && trim($value) === '') {
                 $missing[] = $name;
             }
         }

@@ -77,6 +77,24 @@ a refused login flags the mailbox; other errors retry 15 minutes later.
 Campaign pages show sent/opened/clicked/bounced/unsubscribed counts and where
 each lead is in the sequence.
 
+## AI personalization
+
+Settings → **AI settings** (owners and admins): use the included Claude
+credits (`ANTHROPIC_API_KEY` on the server, a monthly token allowance per
+workspace) or the workspace's own Anthropic or OpenAI key, stored encrypted.
+Claude defaults to Opus 5.5 at low effort with server-side refusal fallback;
+Sonnet 5.5 and Haiku 4.5 are cheaper options. The page shows this month's
+token usage and estimated cost.
+
+Outreach → **AI prompts** holds reusable instructions (what you sell, to whom)
+with tone, language and length. On a campaign, **AI personalize** writes a
+first line, subject or whole email for every lead in the audience in the
+background (`ai` queue). Outreach → **AI review** lists the results: approve,
+edit, reject or regenerate them, one by one or in bulk. Use the content in the
+sequence as `{{ai_first_line}}`, `{{ai_subject}}` or `{{ai_email}}`. Only
+approved content is ever sent: without a fallback (`{{ai_first_line|Hi}}`) a
+campaign can't launch, and a lead's email waits, until its content is approved.
+
 ## Leads
 
 Outreach → **Leads** imports CSVs in the background (100-row chunks, so it

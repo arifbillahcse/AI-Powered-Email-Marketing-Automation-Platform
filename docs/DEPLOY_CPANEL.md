@@ -111,6 +111,12 @@ MAILBOX_ALLOW_PRIVATE_HOSTS=false
 
 # Tracking domain CNAME target (Phase 5)
 TRACKING_CNAME_TARGET=track.yourdomain.com
+
+# AI personalization (Phase 6). Optional: without it, workspaces use their own
+# Anthropic/OpenAI key from AI settings.
+ANTHROPIC_API_KEY=sk-ant-...
+AI_PLATFORM_MODEL=claude-opus-5-5
+AI_PLATFORM_MONTHLY_TOKENS=2000000
 ```
 
 ## 6. Install
@@ -150,7 +156,10 @@ sending. Without it, nothing in the background happens.
 
 ## Updating
 
-1. Download the newest release zip (step 1).
+1. Download the newest release zip (step 1). It includes `vendor/`, so new
+   Composer packages (like the Anthropic SDK in Phase 6) come with it. If you
+   deploy with Git instead, run the Composer install from Troubleshooting after
+   pulling.
 2. Upload it and extract **over** `~/outreach`. Your `.env` and `storage/` are kept.
 3. Run:
 
@@ -204,6 +213,14 @@ tracking links in every email point to it.
 Custom tracking domains (track.yourdomain.com) need their own SSL
 certificate on this server for `https` links. On shared hosting, leave the
 tracking domain empty unless your host can issue that certificate.
+
+## AI personalization
+
+AI content is written in the background by the same cron, one lead per job
+(each job takes a few seconds), so 500 leads take roughly 10 to 30 minutes on
+shared hosting. Rate limits are retried automatically. Your host must allow
+outbound HTTPS to `api.anthropic.com` (and `api.openai.com` if a workspace uses
+OpenAI).
 
 ## Large CSV imports
 

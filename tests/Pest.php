@@ -1,17 +1,21 @@
 <?php
 
 use App\Enums\WorkspaceRole;
+use App\Models\AiSetting;
 use App\Models\Campaign;
 use App\Models\EmailAccount;
 use App\Models\Lead;
 use App\Models\LeadList;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Ai\TextGenerator;
+use App\Services\Ai\TextGeneratorFactory;
 use App\Services\Campaigns\CampaignLauncher;
 use App\Services\Mail\MailboxTransportFactory;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Tests\Fakes\FakeTextGenerator;
 use Tests\Fakes\RecordingTransport;
 use Tests\TestCase;
 
@@ -66,10 +70,11 @@ function fakeTransport(?string $failWith = null, int $failCode = 0): RecordingTr
 /**
  * A launched campaign that may send right now: UTC workspace with a mailing
  * address, one active mailbox and a campaign open every day, all day.
+ * Pass launch: false for one that is ready but still a draft.
  *
  * @return array{workspace: Workspace, campaign: Campaign, mailbox: EmailAccount, leads: Collection<int, Lead>}
  */
-function readyCampaign(int $leads = 1, array $campaign = [], array $mailbox = []): array
+function readyCampaign(int $leads = 1, array $campaign = [], array $mailbox = [], bool $launch = true): array
 {
     $workspace = Workspace::factory()->withMailingAddress()->create(['timezone' => 'UTC']);
     $list = LeadList::factory()->for($workspace)->create();
@@ -98,7 +103,30 @@ function readyCampaign(int $leads = 1, array $campaign = [], array $mailbox = []
     $campaignModel->leadLists()->attach($list);
     $campaignModel->emailAccounts()->attach($mailboxModel);
 
-    app(CampaignLauncher::class)->launch($campaignModel);
+    if ($launch) {
+        app(CampaignLauncher::class)->launch($campaignModel);
+    }
 
     return ['workspace' => $workspace, 'campaign' => $campaignModel->refresh(), 'mailbox' => $mailboxModel, 'leads' => $leadModels];
+}
+
+/**
+ * Replace every workspace's AI provider with a fake that answers $reply
+ * (a string, a closure of (system, user), or an exception to throw).
+ */
+function fakeAi(string|Closure|Throwable $reply = 'Loved your recent launch.', bool $refuse = false): FakeTextGenerator
+{
+    $generator = new FakeTextGenerator($reply, $refuse);
+
+    app()->instance(TextGeneratorFactory::class, new class($generator) extends TextGeneratorFactory
+    {
+        public function __construct(public FakeTextGenerator $generator) {}
+
+        public function for(AiSetting $setting, ?float $timeout = null): TextGenerator
+        {
+            return $this->generator;
+        }
+    });
+
+    return $generator;
 }

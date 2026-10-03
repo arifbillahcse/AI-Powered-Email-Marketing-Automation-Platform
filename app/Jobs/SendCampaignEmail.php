@@ -123,6 +123,16 @@ class SendCampaignEmail implements ShouldQueue
 
         $unsubscribeUrl = $urls->unsubscribe($mailbox, $message->token);
         $content = $builder->build($campaign, $step, $lead, $mailbox, $unsubscribeUrl);
+
+        // AI content used without a fallback but not approved for this lead
+        // yet: never send a half-empty email. Check again later.
+        if (array_intersect($content['missing'], CampaignMessageBuilder::aiVariables()) !== []) {
+            $message->delete();
+            $campaignLead->forceFill(['next_send_at' => now()->addMinutes((int) config('outreach.ai.awaiting_review_minutes', 60))])->save();
+
+            return;
+        }
+
         $message->forceFill(['subject' => mb_substr($content['subject'], 0, 255)])->save();
 
         $email = (new Email)

@@ -2,17 +2,24 @@
 
 namespace App\Filament\App\Resources\Campaigns;
 
+use App\Enums\AiContentType;
 use App\Enums\CampaignStatus;
+use App\Filament\App\Resources\AiGenerations\AiGenerationResource;
+use App\Filament\App\Resources\AiPromptTemplates\AiPromptTemplateResource;
+use App\Models\AiPromptTemplate;
 use App\Models\Campaign;
 use App\Models\Lead;
+use App\Services\Ai\AiGenerationService;
 use App\Services\Campaigns\CampaignAudience;
 use App\Services\Campaigns\CampaignCloner;
 use App\Services\Campaigns\CampaignLauncher;
 use App\Services\Campaigns\CampaignLaunchException;
 use App\Services\Campaigns\CampaignMessageBuilder;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Html;
 use Filament\Schemas\Components\Utilities\Get;
@@ -160,6 +167,92 @@ class CampaignActions
             ->action(function (Campaign $record): void {
                 $added = app(CampaignLauncher::class)->enroll($record, Auth::user());
                 Notification::make()->title(Number::format($added).' new leads enrolled')->success()->send();
+            });
+    }
+
+    /**
+     * Queue AI content (first lines, subjects or whole emails) for every lead
+     * in the audience. It lands in AI review; only approved content is sent.
+     */
+    public static function aiPersonalize(): Action
+    {
+        return Action::make('aiPersonalize')
+            ->label('AI personalize')
+            ->icon(Heroicon::OutlinedSparkles)
+            ->color('gray')
+            ->authorize('update')
+            ->visible(fn (Campaign $record): bool => ! $record->is_template && $record->status !== CampaignStatus::Completed)
+            ->disabled(fn (): bool => modules()->disabled('ai'))
+            ->tooltip(fn (): ?string => modules()->disabled('ai') ? 'The AI module isn\'t enabled on this server.' : null)
+            ->modalHeading('AI personalize')
+            ->modalDescription(fn (Campaign $record): string => 'Writes content for each of the '.Number::format(app(CampaignAudience::class)->count($record))
+                .' leads in this campaign\'s audience. Review and approve it in AI review, then use the variable in your email, e.g. {{ai_first_line}}.')
+            ->modalSubmitActionLabel('Start writing')
+            ->fillForm(fn (Campaign $record): array => [
+                'step_id' => $record->steps()->value('id'),
+                'type' => AiContentType::FirstLine->value,
+            ])
+            ->schema([
+                Select::make('step_id')
+                    ->label('For email')
+                    ->options(fn (Campaign $record): array => $record->steps()->get()
+                        ->mapWithKeys(fn ($step): array => [$step->id => "Email {$step->position}".($step->subject ? ": {$step->subject}" : ' (same thread)')])
+                        ->all())
+                    ->required(),
+                Select::make('type')
+                    ->label('Write')
+                    ->options(AiContentType::class)
+                    ->required()
+                    ->live(),
+                Select::make('template_id')
+                    ->label('Prompt')
+                    ->helperText('Tells the AI what you sell and how to write. Create one with the + button.')
+                    ->options(fn (Get $get): array => AiPromptTemplate::query()
+                        ->where('workspace_id', Filament::getTenant()?->getKey())
+                        ->when(AiContentType::fromState($get('type')), fn ($query, AiContentType $type) => $query->where('type', $type->value))
+                        ->orderBy('name')
+                        ->pluck('name', 'id')
+                        ->all())
+                    ->createOptionForm(AiPromptTemplateResource::formComponents(editing: false))
+                    ->createOptionUsing(function (array $data): int {
+                        $template = new AiPromptTemplate($data);
+                        $template->workspace_id = Filament::getTenant()->getKey();
+                        $template->save();
+
+                        return $template->getKey();
+                    })
+                    ->required(),
+                Toggle::make('redo')
+                    ->label('Rewrite content that isn\'t approved yet')
+                    ->helperText('Off: only leads without content for this email are written. Approved content is never replaced.'),
+            ])
+            ->action(function (Campaign $record, array $data): void {
+                $step = $record->steps()->findOrFail($data['step_id']);
+                $template = AiPromptTemplate::query()
+                    ->where('workspace_id', $record->workspace_id)
+                    ->findOrFail($data['template_id']);
+
+                $queued = app(AiGenerationService::class)->queue(
+                    $record,
+                    $step,
+                    AiContentType::fromState($data['type']) ?? AiContentType::FirstLine,
+                    $template,
+                    Auth::user(),
+                    redo: (bool) ($data['redo'] ?? false),
+                );
+
+                Notification::make()
+                    ->title($queued > 0 ? 'Writing for '.Number::format($queued).' '.($queued === 1 ? 'lead' : 'leads') : 'Nothing new to write')
+                    ->body($queued > 0
+                        ? 'This runs in the background. You\'ll get a notification when it\'s ready in AI review.'
+                        : 'Every lead already has this content. Turn on "Rewrite" to write unapproved content again.')
+                    ->success()
+                    ->actions([
+                        Action::make('review')
+                            ->label('Open AI review')
+                            ->url(AiGenerationResource::getUrl('index', ['filters' => ['campaign_id' => ['value' => $record->getKey()], 'status' => ['value' => null]]])),
+                    ])
+                    ->send();
             });
     }
 

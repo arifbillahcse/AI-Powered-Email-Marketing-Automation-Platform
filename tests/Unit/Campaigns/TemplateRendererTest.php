@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Campaigns\TemplateRenderer;
+use Illuminate\Support\HtmlString;
 
 beforeEach(fn () => $this->renderer = new TemplateRenderer);
 
@@ -53,4 +54,16 @@ it('escapes values in HTML mode only', function () {
 
 it('lists the variables a template uses', function () {
     expect($this->renderer->variablesIn('{{First_Name}} {{company|x}} {{first_name}}'))->toBe(['first_name', 'company']);
+});
+
+it('inserts Htmlable values as markup in HTML mode only', function () {
+    $vars = ['ai_email' => new HtmlString('<p>One</p><p>Two</p>')];
+
+    expect($this->renderer->render('{{ai_email}}', $vars, 's', html: true))->toBe('<p>One</p><p>Two</p>')
+        ->and($this->renderer->missingVariables('{{ai_email}}', $vars))->toBe([])
+        ->and($this->renderer->missingVariables('{{ai_email}}', ['ai_email' => '']))->toBe(['ai_email']);
+});
+
+it('lists the variables used without a fallback', function () {
+    expect($this->renderer->variablesWithoutFallback('{{ai_first_line}} {{ai_subject|Hi}} {{AI_EMAIL}}'))->toBe(['ai_first_line', 'ai_email']);
 });
