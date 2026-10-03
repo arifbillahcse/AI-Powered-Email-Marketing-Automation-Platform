@@ -133,7 +133,7 @@ chmod -R 775 storage bootstrap/cache
 cPanel → **Cron Jobs** → Common settings: **Once Per Minute** (`* * * * *`):
 
 ```bash
-cd /home/USERNAME/outreach && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
+cd /home/USERNAME/outreach && /opt/cpanel/ea-php84/root/usr/bin/php artisan schedule:run >> /dev/null 2>&1
 ```
 
 Use the same PHP path as step 6. This one cron runs everything: queued
@@ -164,10 +164,31 @@ php artisan up
 
 ## Troubleshooting
 
+### Use the full PHP 8.4 path for every command
+
+cPanel's `php` command picks the PHP version from the folder of the *script
+being run*. `artisan` (in the project folder) may get 8.4 while
+`~/composer.phar` (in your home folder) gets the old default, so Composer
+fails with "requires php ^8.3 but your php version (8.1) does not satisfy".
+Always call the binary directly:
+
+```bash
+PHP84=/opt/cpanel/ea-php84/root/usr/bin/php   # or /opt/alt/php84/usr/bin/php
+$PHP84 -d memory_limit=-1 ~/composer.phar install --no-dev --optimize-autoloader
+$PHP84 artisan migrate --force
+```
+
+No `composer` command? Use the `composer.phar` in your home folder as above, or
+download it: `curl -sS https://getcomposer.org/installer | $PHP84`.
+
 | Problem | Fix |
 |---|---|
+| `php artisan ...` prints nothing at all | `vendor/` is missing (PHP hides the fatal error). Run the Composer install above. |
+| "The GET method is not supported for route /" and the URL contains `/public` | The document root still points at the project folder. Set it to `.../public` (step 3). This also stops `.env` being downloadable. |
+| `Class "Redis" not found` | `.env` still uses Redis. Set `SESSION_DRIVER`, `CACHE_STORE` and `QUEUE_CONNECTION` to `database`, then `$PHP84 artisan optimize:clear && $PHP84 artisan optimize`. |
+| `.env` changes have no effect | Config is cached. Run `$PHP84 artisan optimize:clear` then `$PHP84 artisan optimize` after every `.env` edit. Check with `$PHP84 artisan about --only=environment,drivers`. |
 | 500 error | Check `storage/logs/laravel.log`. Usually permissions (`chmod -R 775 storage bootstrap/cache`) or a missing `APP_KEY`. |
-| Page has no styling | `public/build` is missing: use the release zip, not a plain Git checkout. Then run `php artisan filament:assets`. |
+| Page has no styling | Run `$PHP84 artisan filament:assets`. The custom theme also needs `public/build` (release zip or cPanel's Node.js App); without it Filament's default styling is used. |
 | Emails/invitations never arrive | The cron job isn't running. Check the PHP path, and look at **Cron Jobs → Cron email** output. |
 | "Test connection" times out | Your host blocks outbound SMTP/IMAP ports. Ask support to open 465/587/993, or move to a VPS. |
 | `Specified key was too long` during migrate | Very old MySQL. Ask your host for MySQL 5.7+/MariaDB 10.3+. |
