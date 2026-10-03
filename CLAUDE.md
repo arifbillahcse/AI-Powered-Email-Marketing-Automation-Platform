@@ -56,6 +56,8 @@ The app must run on **both** Docker/VPS (PostgreSQL + Redis + Horizon) and
 **cPanel shared hosting** (MySQL/MariaDB, database queue/cache/sessions, no
 Redis, no long-running processes, no Node.js). CI tests PostgreSQL and MySQL.
 - No database-specific SQL; use the query builder (both CI legs must pass).
+- JSON columns: use `$table->jsonb()`. On PostgreSQL plain `json` can't be
+  compared, so `SELECT DISTINCT` (used by Filament relationship selects) fails.
 - No Redis-only features. Rate limiting via `RateLimiter`/`Cache` works on both.
 - Queued jobs must finish well under 50 seconds (cron works the queue for ~55s
   per minute on cPanel) and be safe to retry. Split long work into small jobs.
