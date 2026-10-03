@@ -111,11 +111,16 @@ Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 
 **Done when:** replies from every inbox show in one place and can be answered in-thread.
 
-### ⬜ Phase 8: Analytics dashboard
-- KPIs: sent, open %, click %, reply %, bounce %, unsubscribe %
+### ✅ Phase 8: Analytics dashboard
+- KPIs: sent, open %, click %, reply %, bounce %, unsubscribe % (Insights →
+  Analytics, and the last 30 days on the dashboard). Every metric counts the
+  emails *sent* in the period and what happened to them, straight from
+  `email_messages`, whose timestamps are set by the matching events
 - Per campaign / step / mailbox breakdowns, trend charts
-- Inbox health score (0–100)
-- Date filters, CSV export
+- Inbox health score (0–100) per mailbox with the reasons for lost points
+  (bounces, unsubscribes, no replies, DNS, connection, daily limit)
+- Date filters (in the workspace's time zone), campaign and mailbox filters,
+  CSV export (formula-injection safe)
 
 **Done when:** dashboard numbers match event data exactly.
 

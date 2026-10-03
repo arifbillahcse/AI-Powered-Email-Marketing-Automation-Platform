@@ -111,6 +111,15 @@ conversation to read it, label the lead (Interested, Meeting booked, Not
 interested, Closed) and reply: the reply goes out from the original mailbox
 in the same thread.
 
+## Analytics
+
+Insights → **Analytics** shows sent, open, click, reply, bounce and
+unsubscribe rates for any period (in your workspace's time zone), a daily
+activity chart, and breakdowns per campaign, per email of a sequence and per
+mailbox. Each mailbox gets an inbox health score (0–100) with the reasons
+it lost points. Rates are a share of the emails sent in the period, so they
+match the event log exactly. **Export CSV** downloads any breakdown.
+
 ## Leads
 
 Outreach → **Leads** imports CSVs in the background (100-row chunks, so it

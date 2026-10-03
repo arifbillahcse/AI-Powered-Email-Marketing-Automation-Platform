@@ -28,6 +28,7 @@ class EmailMessage extends Model
         'click_count' => 0,
         'bounced_at' => null,
         'replied_at' => null,
+        'unsubscribed_at' => null,
     ];
 
     protected function casts(): array
@@ -42,6 +43,7 @@ class EmailMessage extends Model
             'click_count' => 'integer',
             'bounced_at' => 'datetime',
             'replied_at' => 'datetime',
+            'unsubscribed_at' => 'datetime',
         ];
     }
 

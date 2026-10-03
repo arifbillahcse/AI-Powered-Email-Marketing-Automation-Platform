@@ -70,6 +70,12 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Models/AiSetting.php` (encrypted BYOK key), `AiPromptTemplate`,
   `AiGeneration` (one per lead per step per type), `AiUsage` (tokens)
 - `app/Jobs/DispatchAiGenerations.php` + `GenerateAiContent.php` (`ai` queue)
+- `app/Services/Analytics/`: `AnalyticsReport` (KPIs/breakdowns/daily, all from
+  `email_messages` timestamps: sent_at, opened_at, clicked_at, replied_at,
+  bounced_at, unsubscribed_at; keep each set once by its event),
+  `AnalyticsFilters` (period in the workspace time zone), `MailboxHealth`, `AnalyticsCsv`
+- `app/Filament/App/Pages/Analytics.php` (filters + widgets in
+  `Widgets/Analytics/`) and `Pages/Dashboard.php` (explicit widget list)
 - `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target, AI models/prices
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme

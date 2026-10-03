@@ -74,8 +74,13 @@ class EngagementRecorder
         $this->suppressions->add($lead->workspace_id, $lead->email, SuppressionReason::Unsubscribed);
         $this->stopLead($lead, CampaignLeadStatus::Unsubscribed);
 
-        if (! $alreadyUnsubscribed) {
+        // One unsubscribe per email, so analytics match the events exactly.
+        if ($message->unsubscribed_at === null) {
+            $message->forceFill(['unsubscribed_at' => now()])->save();
             $message->recordEvent(EmailEventType::Unsubscribe);
+        }
+
+        if (! $alreadyUnsubscribed) {
             $lead->update(['status' => LeadStatus::Unsubscribed]);
             $lead->logActivity(LeadActivityType::Unsubscribed, 'Unsubscribed via the link in an email');
         }
