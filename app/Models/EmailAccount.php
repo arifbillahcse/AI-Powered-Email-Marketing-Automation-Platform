@@ -9,6 +9,7 @@ use Database\Factories\EmailAccountFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
@@ -80,6 +81,7 @@ class EmailAccount extends Model
         'warmup_daily_target' => 20,
         'warmup_reply_rate' => 30,
         'warmup_started_at' => null,
+        'next_send_at' => null,
     ];
 
     protected function casts(): array
@@ -101,6 +103,7 @@ class EmailAccount extends Model
             'last_tested_at' => 'datetime',
             'warmup_enabled' => 'boolean',
             'warmup_started_at' => 'datetime',
+            'next_send_at' => 'datetime',
         ];
     }
 
@@ -151,6 +154,14 @@ class EmailAccount extends Model
     public function domain(): string
     {
         return Str::lower(Str::after($this->email, '@'));
+    }
+
+    /**
+     * @return HasMany<EmailMessage, $this>
+     */
+    public function emailMessages(): HasMany
+    {
+        return $this->hasMany(EmailMessage::class);
     }
 
     public function smtpUsername(): string

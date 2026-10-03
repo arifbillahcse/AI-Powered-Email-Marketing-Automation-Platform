@@ -300,7 +300,11 @@ class EmailAccountResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('sendingDomain'))
+            ->modifyQueryUsing(fn ($query) => $query
+                ->with('sendingDomain')
+                ->withCount(['emailMessages as sent_today_count' => fn ($messages) => $messages
+                    ->whereNotNull('sent_at')
+                    ->where('sent_at', '>=', now()->startOfDay())]))
             ->columns([
                 TextColumn::make('email')
                     ->description(fn (EmailAccount $record): string => $record->from_name)
@@ -310,10 +314,9 @@ class EmailAccountResource extends Resource
                     ->badge()
                     ->tooltip(fn (EmailAccount $record): ?string => $record->last_error)
                     ->sortable(),
-                TextColumn::make('daily_limit')
-                    ->label('Daily limit')
-                    ->suffix(' / day')
-                    ->sortable(),
+                TextColumn::make('sent_today_count')
+                    ->label('Sent today')
+                    ->state(fn (EmailAccount $record): string => "{$record->sent_today_count} / {$record->daily_limit}"),
                 TextColumn::make('sendingDomain.status')
                     ->label('Domain health')
                     ->badge(),

@@ -63,15 +63,18 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 
 **Done when:** a full campaign can be configured and previewed per lead.
 
-### ⬜ Phase 5: Sending engine
+### ✅ Phase 5: Sending engine
 Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 - Scheduler dispatches due sends every minute (`sending` queue)
 - Per-mailbox throttling with Redis rate limiters, random delays
 - Inbox rotation, personalization rendering
 - Open pixel, click redirect, one-click unsubscribe + `List-Unsubscribe` headers
 - Suppression/unsubscribe check right before send
-- Bounce parsing (hard/soft), auto-suppress hard bounces
-- `email_events` table partitioned by month
+- Bounce handling: SMTP-time rejections are classified (hard bounce → suppressed,
+  login failure → mailbox flagged, else retry). The DSN parser for bounce *emails*
+  is ready; reading them from the inbox lands with IMAP in Phase 7
+- `email_events` table (indexed; not partitioned, to stay portable across
+  PostgreSQL and MySQL; archiving comes in Phase 16)
 - Retries and failures visible in Horizon
 
 **Done when:** a campaign sends real email at the configured pace and events are recorded.

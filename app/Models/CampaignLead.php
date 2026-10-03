@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CampaignLeadStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CampaignLead extends Model
 {
@@ -51,5 +52,13 @@ class CampaignLead extends Model
     public function emailAccount(): BelongsTo
     {
         return $this->belongsTo(EmailAccount::class);
+    }
+
+    /**
+     * @return HasMany<EmailMessage, $this>
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(EmailMessage::class)->orderBy('step_position');
     }
 }

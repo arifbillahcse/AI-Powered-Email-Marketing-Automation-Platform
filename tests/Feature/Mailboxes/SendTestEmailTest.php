@@ -4,25 +4,6 @@ use App\Enums\EmailAccountStatus;
 use App\Jobs\SendTestEmail;
 use App\Models\EmailAccount;
 use App\Models\User;
-use App\Services\Mail\MailboxTransportFactory;
-use Tests\Fakes\RecordingTransport;
-
-function fakeTransport(?string $failWith = null): RecordingTransport
-{
-    $transport = new RecordingTransport($failWith);
-
-    app()->instance(MailboxTransportFactory::class, new class($transport) extends MailboxTransportFactory
-    {
-        public function __construct(public RecordingTransport $transport) {}
-
-        public function make(EmailAccount $account): RecordingTransport
-        {
-            return $this->transport;
-        }
-    });
-
-    return $transport;
-}
 
 it('sends a real message through the mailbox and notifies the user', function () {
     $transport = fakeTransport();

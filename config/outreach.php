@@ -60,6 +60,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Sending engine
+    |--------------------------------------------------------------------------
+    */
+
+    'sending' => [
+        // A lead picked for sending is held this long; if its job never runs
+        // (worker down) it becomes due again. A step is never sent twice.
+        'lease_minutes' => 30,
+        // Wait before retrying after a temporary SMTP error.
+        'retry_minutes' => 15,
+        // URL scheme for custom tracking domains (they need an SSL
+        // certificate for https; see the tracking domain help text).
+        'tracking_scheme' => env('TRACKING_SCHEME', 'https'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue processing
     |--------------------------------------------------------------------------
     |

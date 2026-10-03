@@ -22,6 +22,11 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
     case StatusChanged = 'status_changed';
     case Suppressed = 'suppressed';
     case AddedToCampaign = 'added_to_campaign';
+    case EmailSent = 'email_sent';
+    case EmailOpened = 'email_opened';
+    case LinkClicked = 'link_clicked';
+    case Bounced = 'bounced';
+    case Unsubscribed = 'unsubscribed';
 
     public function getLabel(): string
     {
@@ -36,6 +41,11 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::StatusChanged => 'Status changed',
             self::Suppressed => 'Suppressed',
             self::AddedToCampaign => 'Added to campaign',
+            self::EmailSent => 'Email sent',
+            self::EmailOpened => 'Email opened',
+            self::LinkClicked => 'Link clicked',
+            self::Bounced => 'Bounced',
+            self::Unsubscribed => 'Unsubscribed',
         };
     }
 
@@ -43,7 +53,10 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
     {
         return match ($this) {
             self::Created, self::Imported, self::AddedToCampaign => 'primary',
-            self::Suppressed => 'danger',
+            self::Suppressed, self::Bounced => 'danger',
+            self::EmailSent => 'primary',
+            self::EmailOpened, self::LinkClicked => 'info',
+            self::Unsubscribed => 'danger',
             self::StatusChanged => 'info',
             default => 'gray',
         };
@@ -60,6 +73,11 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::StatusChanged => Heroicon::OutlinedArrowsRightLeft,
             self::Suppressed => Heroicon::OutlinedNoSymbol,
             self::AddedToCampaign => Heroicon::OutlinedRocketLaunch,
+            self::EmailSent => Heroicon::OutlinedPaperAirplane,
+            self::EmailOpened => Heroicon::OutlinedEnvelopeOpen,
+            self::LinkClicked => Heroicon::OutlinedCursorArrowRays,
+            self::Bounced => Heroicon::OutlinedExclamationTriangle,
+            self::Unsubscribed => Heroicon::OutlinedNoSymbol,
         };
     }
 }

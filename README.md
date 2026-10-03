@@ -60,7 +60,22 @@ days, window, daily cap) and options (stop on reply, open/click tracking,
 plain text). **Preview** shows the exact email any lead will get. **Launch**
 checks everything first (sequence, active mailbox, mailing address, audience)
 and enrolls the leads. Campaigns can be paused, resumed, stopped, duplicated
-or saved as templates. Sending itself arrives in Phase 5.
+or saved as templates.
+
+## Sending
+
+Every minute `campaigns:send` (scheduled) picks one due lead per available
+mailbox and queues the email on the `sending` queue. It honours each mailbox's
+daily limit, random gap and send window, the campaign's daily cap, days, hours
+and time zone, keeps each lead on the same mailbox, and never emails anyone on
+the suppression list. Follow-ups reply in the same thread.
+
+Every email has a `Message-ID`, an unsubscribe link and RFC 8058 one-click
+`List-Unsubscribe` headers. Opens (pixel) and clicks (signed redirects) are
+tracked when enabled. A rejected address is a hard bounce and is suppressed;
+a refused login flags the mailbox; other errors retry 15 minutes later.
+Campaign pages show sent/opened/clicked/bounced/unsubscribed counts and where
+each lead is in the sequence.
 
 ## Leads
 

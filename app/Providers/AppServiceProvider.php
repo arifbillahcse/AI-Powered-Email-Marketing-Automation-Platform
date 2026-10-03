@@ -10,8 +10,11 @@ use App\Services\Mail\HostGuard;
 use App\Services\Mail\Imap\ImapConnector;
 use App\Services\Mail\MailboxTransportFactory;
 use App\Support\Modules\ModuleRegistry;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -57,5 +60,8 @@ class AppServiceProvider extends ServiceProvider
         // Surface lazy loading, silently discarded attributes and missing
         // attributes as exceptions outside production.
         Model::shouldBeStrict(! $this->app->isProduction());
+
+        // Email tracking endpoints: generous (image-heavy inboxes), but bounded.
+        RateLimiter::for('tracking', fn (Request $request) => Limit::perMinute(240)->by($request->ip()));
     }
 }

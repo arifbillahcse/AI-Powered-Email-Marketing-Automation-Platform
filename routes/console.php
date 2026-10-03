@@ -7,6 +7,10 @@ Schedule::command('horizon:snapshot')
     ->everyFiveMinutes()
     ->when(fn (): bool => config('queue.default') === 'redis');
 
+// Campaign sending: queue due emails. Runs before the cPanel queue worker
+// below, so on shared hosting the same cron run also sends them.
+Schedule::command('campaigns:send')->everyMinute()->withoutOverlapping(5);
+
 // Shared hosting (cPanel): no long-running workers, so the cron-driven
 // scheduler works the queues for just under a minute, every minute.
 Schedule::command('queue:work', [

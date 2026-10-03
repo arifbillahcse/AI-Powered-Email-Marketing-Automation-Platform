@@ -16,12 +16,13 @@ class RecordingTransport implements TransportInterface
 
     public function __construct(
         public ?string $failWith = null,
+        public int $failCode = 0,
     ) {}
 
     public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
     {
         if ($this->failWith !== null) {
-            throw new TransportException($this->failWith);
+            throw new TransportException($this->failWith, $this->failCode);
         }
 
         $this->sent[] = $message;

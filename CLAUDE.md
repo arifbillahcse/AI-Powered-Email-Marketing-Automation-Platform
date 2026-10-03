@@ -46,6 +46,13 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Services/Campaigns/`: `TemplateRenderer` ({{variables|fallback}} +
   spintax), `CampaignMessageBuilder` (the exact email a lead gets; Phase 5
   sends with it), `CampaignAudience`, `CampaignLauncher`, `CampaignCloner`
+- `app/Services/Sending/`: `SendScheduler` (every minute: picks + claims due
+  leads per mailbox), `SendWindow`, `TrackingUrls` (signed click links),
+  `LinkTracker`, `EngagementRecorder` (opens/clicks/unsubscribes/bounces),
+  `SmtpFailure`, `BounceClassifier` (DSN parser for Phase 7)
+- `app/Jobs/SendCampaignEmail.php`: sends one step to one lead; pinned to a
+  step number, and `email_messages` is unique per (campaign lead, step)
+- `routes/tracking.php`: open pixel, click redirect, unsubscribe (no session/CSRF)
 - `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme
@@ -101,6 +108,11 @@ Redis, no long-running processes, no Node.js). CI tests PostgreSQL and MySQL.
 - Never put mailbox passwords in form state, logs, notifications or `toArray()`.
 - Long or user-waited work that talks to the outside world (sending, DNS at
   scale) goes on a queue and reports back with a Filament database notification.
+- Sending must never send a step twice: claim leads with a conditional
+  UPDATE, pin jobs to a step, and rely on the unique (campaign_lead_id,
+  step_position) row. Re-check suppression in the job right before sending.
+- Timestamps written by raw SQL use the app clock (`now()`), never the
+  database's CURRENT_TIMESTAMP (tests travel in time; clocks can differ).
 - Compliance is not optional: every campaign email gets an unsubscribe link,
   `List-Unsubscribe` headers, and a suppression check before sending.
 

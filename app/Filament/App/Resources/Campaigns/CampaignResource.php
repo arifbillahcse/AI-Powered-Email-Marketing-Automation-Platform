@@ -6,6 +6,7 @@ use App\Enums\EmailAccountStatus;
 use App\Filament\App\Resources\Campaigns\Pages\CreateCampaign;
 use App\Filament\App\Resources\Campaigns\Pages\EditCampaign;
 use App\Filament\App\Resources\Campaigns\Pages\ListCampaigns;
+use App\Filament\App\Resources\Campaigns\RelationManagers\CampaignLeadsRelationManager;
 use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Models\Campaign;
 use App\Models\EmailAccount;
@@ -249,6 +250,13 @@ class CampaignResource extends Resource
                     DeleteAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            CampaignLeadsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

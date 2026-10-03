@@ -193,6 +193,18 @@ download it: `curl -sS https://getcomposer.org/installer | $PHP84`.
 | "Test connection" times out | Your host blocks outbound SMTP/IMAP ports. Ask support to open 465/587/993, or move to a VPS. |
 | `Specified key was too long` during migrate | Very old MySQL. Ask your host for MySQL 5.7+/MariaDB 10.3+. |
 
+## Sending campaigns
+
+The same every-minute cron queues due campaign emails (`campaigns:send`) and
+then sends them. Each mailbox sends at most one email per minute (plus its
+random gap), so 10 mailboxes at 30/day finish their daily quota within a
+working day. Make sure `APP_URL` is your real https URL: unsubscribe and
+tracking links in every email point to it.
+
+Custom tracking domains (track.yourdomain.com) need their own SSL
+certificate on this server for `https` links. On shared hosting, leave the
+tracking domain empty unless your host can issue that certificate.
+
 ## Large CSV imports
 
 Imports run in the background via the cron job, 100 rows per job. A 50,000-row

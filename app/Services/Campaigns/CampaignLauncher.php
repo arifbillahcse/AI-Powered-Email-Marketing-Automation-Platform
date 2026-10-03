@@ -103,13 +103,16 @@ class CampaignLauncher
         $campaignId = (int) $campaign->getKey();
         $workspaceId = (int) $campaign->workspace_id;
         $lastId = (int) DB::table('campaign_leads')->max('id');
+        // The app's clock, not the database's (they can differ, and tests
+        // travel in time). A typed literal works on PostgreSQL and MySQL.
+        $now = "TIMESTAMP '".now()->format('Y-m-d H:i:s')."'";
 
         $enrolled = DB::table('campaign_leads')->insertOrIgnoreUsing(
             ['campaign_id', 'lead_id', 'status', 'steps_sent', 'next_send_at', 'created_at', 'updated_at'],
             $this->audience->query($campaign)
                 ->toBase()
                 ->select([])
-                ->selectRaw("{$campaignId} as campaign_id, leads.id as lead_id, 'active' as status, 0 as steps_sent, CURRENT_TIMESTAMP as next_send_at, CURRENT_TIMESTAMP as created_at, CURRENT_TIMESTAMP as updated_at"),
+                ->selectRaw("{$campaignId} as campaign_id, leads.id as lead_id, 'active' as status, 0 as steps_sent, {$now} as next_send_at, {$now} as created_at, {$now} as updated_at"),
         );
 
         // Timeline entries for the newly enrolled leads only. user_id is left
@@ -118,7 +121,7 @@ class CampaignLauncher
         // The description is inlined, escaped by the driver's quote(): PostgreSQL
         // can't type a bound parameter that only appears in a SELECT list.
         $description = DB::connection()->getPdo()->quote(mb_substr("Added to campaign \"{$campaign->name}\"", 0, 250));
-        $select = "{$workspaceId}, lead_id, '".LeadActivityType::AddedToCampaign->value."', {$description}, CURRENT_TIMESTAMP";
+        $select = "{$workspaceId}, lead_id, '".LeadActivityType::AddedToCampaign->value."', {$description}, {$now}";
 
         if ($by) {
             $columns[] = 'user_id';
