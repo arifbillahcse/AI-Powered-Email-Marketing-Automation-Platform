@@ -32,12 +32,14 @@ class EditCampaign extends EditRecord
             ->first();
 
         $unsubscribed = $campaign->campaignLeads()->where('status', CampaignLeadStatus::Unsubscribed->value)->count();
+        $replied = $campaign->campaignLeads()->whereNotNull('replied_at')->count();
 
         return collect([
             'Status: '.$campaign->status->getLabel(),
             Number::format((int) $stats?->sent).' sent',
             $campaign->track_opens ? Number::format((int) $stats?->opened).' opened' : null,
             $campaign->track_clicks ? Number::format((int) $stats?->clicked).' clicked' : null,
+            Number::format($replied).' replied',
             Number::format((int) $stats?->bounced).' bounced',
             Number::format($unsubscribed).' unsubscribed',
         ])->filter()->implode(' · ');

@@ -77,6 +77,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Unibox (reply detection)
+    |--------------------------------------------------------------------------
+    |
+    | Mailboxes are polled over IMAP every few minutes. Only replies to
+    | campaign emails (and bounces) are imported; other mail is left alone.
+    |
+    */
+
+    'inbox' => [
+        'messages_per_run' => 50,
+        'seconds_per_run' => 35, // stay well under the 50-second job limit
+        'max_message_bytes' => 262_144,
+        'lookback_days' => 30, // first sync: how far back to look for replies
+
+        // Subjects of automatic replies (regex, case-insensitive).
+        'auto_reply_subjects' => [
+            '^(re:\s*)?auto(matic)?[\s_-]*(reply|response|antwort)',
+            'out of (the )?office',
+            'away from (the |my )?(office|desk)',
+            '\bon (vacation|holiday|leave|annual leave)\b',
+            '^(re:\s*)?autoreply',
+            'abwesenheit',
+            'automatische antwort',
+            'r[ée]ponse automatique',
+            'absence du bureau',
+            'respuesta autom[áa]tica',
+            'fuera de la oficina',
+            'risposta automatica',
+            'fuori sede',
+            'resposta autom[áa]tica',
+            'afwezig',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | AI personalization
     |--------------------------------------------------------------------------
     |

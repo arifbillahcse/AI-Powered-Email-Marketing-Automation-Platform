@@ -176,6 +176,14 @@ class Workspace extends Model
         return $this->hasMany(AiGeneration::class);
     }
 
+    /**
+     * @return HasMany<InboxThread, $this>
+     */
+    public function inboxThreads(): HasMany
+    {
+        return $this->hasMany(InboxThread::class);
+    }
+
     public function addMember(User $user, WorkspaceRole $role): void
     {
         $this->members()->syncWithoutDetaching([

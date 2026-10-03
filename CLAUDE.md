@@ -53,6 +53,16 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Jobs/SendCampaignEmail.php`: sends one step to one lead; pinned to a
   step number, and `email_messages` is unique per (campaign lead, step)
 - `routes/tracking.php`: open pixel, click redirect, unsubscribe (no session/CSRF)
+- `app/Services/Mail/Imap/ImapClient.php`: login/EXAMINE/UID SEARCH/FETCH over
+  `ImapStream` (fake it with `Tests\Fakes\ScriptedImapStream`)
+- `app/Services/Inbox/`: `InboxSynchronizer` (IMAP → processor, resumes from
+  the last UID), `InboundMailProcessor` (bounce / reply / ignore; only
+  campaign-related mail is stored), `ParsedEmail` (MIME via
+  zbateson/mail-mime-parser), `AutoReplyDetector`, `InboxReplier`
+- `app/Models/InboxThread.php` (one Unibox conversation per campaign lead) and
+  `InboxMessage` (plain-text bodies; never render email HTML)
+- `app/Jobs/SyncMailboxInbox.php` (`imap` queue, every 5 min via `inbox:sync`),
+  `SendInboxReply.php` (`sending` queue, not retried)
 - `app/Services/Ai/`: `TextGeneratorFactory` → `ClaudeGenerator` (official
   Anthropic SDK; tests inject a fake PSR-18 client or use `fakeAi()`) or
   `OpenAiGenerator`; `PromptBuilder` (lead data is untrusted input);

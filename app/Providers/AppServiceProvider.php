@@ -7,6 +7,7 @@ use App\Services\Dns\DnsResolver;
 use App\Services\Dns\DomainHealthChecker;
 use App\Services\Dns\NativeDnsResolver;
 use App\Services\Dns\TrackingDomainVerifier;
+use App\Services\Inbox\AutoReplyDetector;
 use App\Services\Mail\HostGuard;
 use App\Services\Mail\Imap\ImapConnector;
 use App\Services\Mail\MailboxTransportFactory;
@@ -28,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ModuleRegistry::class);
 
         $this->app->bind(DnsResolver::class, NativeDnsResolver::class);
+
+        $this->app->bind(AutoReplyDetector::class, fn (): AutoReplyDetector => new AutoReplyDetector(
+            config('outreach.inbox.auto_reply_subjects', []),
+        ));
 
         // Tests swap in a factory with a fake HTTP transport for Claude.
         $this->app->bind(TextGeneratorFactory::class, fn (): TextGeneratorFactory => new TextGeneratorFactory);

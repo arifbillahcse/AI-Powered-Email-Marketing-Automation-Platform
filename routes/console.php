@@ -11,6 +11,9 @@ Schedule::command('horizon:snapshot')
 // below, so on shared hosting the same cron run also sends them.
 Schedule::command('campaigns:send')->everyMinute()->withoutOverlapping(5);
 
+// Reply detection: check every mailbox for replies and bounces (imap queue).
+Schedule::command('inbox:sync')->everyFiveMinutes()->withoutOverlapping(10);
+
 // Shared hosting (cPanel): no long-running workers, so the cron-driven
 // scheduler works the queues for just under a minute, every minute.
 Schedule::command('queue:work', [

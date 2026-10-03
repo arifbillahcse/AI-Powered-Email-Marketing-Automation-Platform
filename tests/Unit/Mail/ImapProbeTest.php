@@ -31,6 +31,11 @@ function scriptedImap(array $responses): array
             return array_shift($this->responses) ?? throw new MailboxConnectionException('closed');
         }
 
+        public function read(int $bytes): string
+        {
+            return '';
+        }
+
         public function enableTls(): void
         {
             $this->tls = true;

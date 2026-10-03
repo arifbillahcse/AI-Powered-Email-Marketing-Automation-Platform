@@ -82,6 +82,10 @@ class EmailAccount extends Model
         'warmup_reply_rate' => 30,
         'warmup_started_at' => null,
         'next_send_at' => null,
+        'imap_uid_validity' => null,
+        'imap_last_uid' => null,
+        'imap_synced_at' => null,
+        'imap_error' => null,
     ];
 
     protected function casts(): array
@@ -93,6 +97,9 @@ class EmailAccount extends Model
             'imap_encryption' => MailEncryption::class,
             'smtp_port' => 'integer',
             'imap_port' => 'integer',
+            'imap_uid_validity' => 'integer',
+            'imap_last_uid' => 'integer',
+            'imap_synced_at' => 'datetime',
             'smtp_password' => 'encrypted',
             'imap_password' => 'encrypted',
             'daily_limit' => 'integer',

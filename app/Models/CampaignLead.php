@@ -18,6 +18,7 @@ class CampaignLead extends Model
         'email_account_id' => null,
         'next_send_at' => null,
         'last_sent_at' => null,
+        'replied_at' => null,
     ];
 
     protected function casts(): array
@@ -27,6 +28,7 @@ class CampaignLead extends Model
             'steps_sent' => 'integer',
             'next_send_at' => 'datetime',
             'last_sent_at' => 'datetime',
+            'replied_at' => 'datetime',
         ];
     }
 

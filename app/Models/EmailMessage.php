@@ -27,6 +27,7 @@ class EmailMessage extends Model
         'clicked_at' => null,
         'click_count' => 0,
         'bounced_at' => null,
+        'replied_at' => null,
     ];
 
     protected function casts(): array
@@ -40,6 +41,7 @@ class EmailMessage extends Model
             'clicked_at' => 'datetime',
             'click_count' => 'integer',
             'bounced_at' => 'datetime',
+            'replied_at' => 'datetime',
         ];
     }
 

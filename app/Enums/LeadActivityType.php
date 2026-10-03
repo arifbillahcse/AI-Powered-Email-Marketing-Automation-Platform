@@ -27,6 +27,9 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
     case LinkClicked = 'link_clicked';
     case Bounced = 'bounced';
     case Unsubscribed = 'unsubscribed';
+    case Replied = 'replied';
+    case AutoReplied = 'auto_replied';
+    case ReplySent = 'reply_sent';
 
     public function getLabel(): string
     {
@@ -46,6 +49,9 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::LinkClicked => 'Link clicked',
             self::Bounced => 'Bounced',
             self::Unsubscribed => 'Unsubscribed',
+            self::Replied => 'Replied',
+            self::AutoReplied => 'Auto-reply',
+            self::ReplySent => 'Reply sent',
         };
     }
 
@@ -58,6 +64,7 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::EmailOpened, self::LinkClicked => 'info',
             self::Unsubscribed => 'danger',
             self::StatusChanged => 'info',
+            self::Replied, self::ReplySent => 'success',
             default => 'gray',
         };
     }
@@ -78,6 +85,8 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::LinkClicked => Heroicon::OutlinedCursorArrowRays,
             self::Bounced => Heroicon::OutlinedExclamationTriangle,
             self::Unsubscribed => Heroicon::OutlinedNoSymbol,
+            self::Replied, self::AutoReplied => Heroicon::OutlinedChatBubbleLeftRight,
+            self::ReplySent => Heroicon::OutlinedArrowUturnLeft,
         };
     }
 }

@@ -8,6 +8,7 @@ use App\Enums\EmailMessageStatus;
 use App\Enums\LeadActivityType;
 use App\Enums\LeadStatus;
 use App\Enums\SuppressionReason;
+use App\Models\Campaign;
 use App\Models\CampaignLead;
 use App\Models\EmailMessage;
 use App\Models\Lead;
@@ -103,6 +104,47 @@ class EngagementRecorder
         $this->stopLead($lead, CampaignLeadStatus::Bounced);
         $lead->update(['status' => LeadStatus::Bounced]);
         $lead->logActivity(LeadActivityType::Bounced, 'Email bounced: '.mb_substr($reason, 0, 150));
+    }
+
+    /**
+     * The lead replied (a real reply, not an out-of-office): record it on
+     * the email, stop the sequence if the campaign says so, mark the lead.
+     */
+    public function reply(CampaignLead $campaignLead, ?EmailMessage $message, ?string $subject): void
+    {
+        $now = now();
+
+        if ($message) {
+            if ($message->replied_at === null) {
+                $message->forceFill(['replied_at' => $now])->save();
+            }
+
+            $message->recordEvent(EmailEventType::Reply);
+        }
+
+        $stopOnReply = (bool) Campaign::query()->whereKey($campaignLead->campaign_id)->value('stop_on_reply');
+        $updates = ['replied_at' => $campaignLead->replied_at ?? $now];
+
+        if ($stopOnReply && in_array($campaignLead->status, [CampaignLeadStatus::Active, CampaignLeadStatus::Completed], true)) {
+            $updates['status'] = CampaignLeadStatus::Replied;
+            $updates['next_send_at'] = null;
+        }
+
+        $campaignLead->forceFill($updates)->save();
+
+        $lead = Lead::query()->find($campaignLead->lead_id);
+
+        if (! $lead) {
+            return;
+        }
+
+        if (in_array($lead->status, [LeadStatus::New, LeadStatus::Contacted], true)) {
+            $lead->update(['status' => LeadStatus::Replied]);
+        }
+
+        $lead->logActivity(LeadActivityType::Replied, 'Replied'.($subject ? " to \"{$subject}\"" : ''), [
+            'campaign_id' => $campaignLead->campaign_id,
+        ]);
     }
 
     protected function stopLead(Lead $lead, CampaignLeadStatus $status): void

@@ -94,14 +94,20 @@ Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 
 **Done when:** 500 leads can be personalized, approved, and sent.
 
-### ⬜ Phase 7: Unibox and reply detection
-- IMAP polling per mailbox (`imap` queue)
-- Match replies via `In-Reply-To` / `References`
-- Auto-stop sequence on reply
-- Unified inbox with filters
+### ✅ Phase 7: Unibox and reply detection
+- IMAP polling per mailbox every 5 minutes (`imap` queue), with a small
+  built-in IMAP client (PHP's IMAP extension is no longer bundled). Read-only:
+  mail is never marked read or moved. Resumes from the last UID; a new
+  mailbox starts from its first campaign email, not its whole history
+- Match replies via `In-Reply-To` / `References`, falling back to the sender
+  being a lead the mailbox emailed. Unrelated mail is never stored
+- Auto-stop sequence on reply (per campaign "stop on reply")
+- Bounce emails (DSNs) found in the inbox suppress hard-bounced leads
+- Unified inbox with filters (unread, label, campaign, mailbox, out-of-office)
 - Lead labels: Interested, Meeting Booked, Not Interested, Closed
-- Reply in-thread from the original mailbox
-- Out-of-office detection (rules)
+- Reply in-thread from the original mailbox (queued; suppression-checked)
+- Out-of-office detection (rules: Auto-Submitted/X-Autoreply/Precedence
+  headers and multilingual subject patterns); shown, but sequences continue
 
 **Done when:** replies from every inbox show in one place and can be answered in-thread.
 

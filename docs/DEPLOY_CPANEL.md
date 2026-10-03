@@ -222,6 +222,13 @@ shared hosting. Rate limits are retried automatically. Your host must allow
 outbound HTTPS to `api.anthropic.com` (and `api.openai.com` if a workspace uses
 OpenAI).
 
+## Reply detection (Unibox)
+
+The same cron checks every mailbox for replies every 5 minutes over IMAP
+(port 993). Each check reads at most 50 new emails, so a busy inbox catches
+up over a few runs. Your host must allow outbound connections to your IMAP
+servers; if a mailbox can't be read, the error is saved on it.
+
 ## Large CSV imports
 
 Imports run in the background via the cron job, 100 rows per job. A 50,000-row

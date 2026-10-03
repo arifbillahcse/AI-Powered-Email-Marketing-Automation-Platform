@@ -95,6 +95,22 @@ sequence as `{{ai_first_line}}`, `{{ai_subject}}` or `{{ai_email}}`. Only
 approved content is ever sent: without a fallback (`{{ai_first_line|Hi}}`) a
 campaign can't launch, and a lead's email waits, until its content is approved.
 
+## Unibox
+
+Outreach → **Unibox** collects replies from every connected mailbox. Every
+5 minutes `inbox:sync` checks each mailbox over IMAP (read-only: nothing is
+marked read or moved) and imports only replies to your campaign emails,
+matched by their `In-Reply-To`/`References` headers or by the sender being a
+lead that mailbox emailed. Your other mail is never stored.
+
+A real reply stops the lead's sequence (when the campaign's "stop on reply"
+is on) and marks the lead Replied. Out-of-office replies are detected by
+their headers and subject, shown with a badge (hidden by default) and don't
+stop anything. Bounce emails suppress hard-bounced addresses. Open a
+conversation to read it, label the lead (Interested, Meeting booked, Not
+interested, Closed) and reply: the reply goes out from the original mailbox
+in the same thread.
+
 ## Leads
 
 Outreach → **Leads** imports CSVs in the background (100-row chunks, so it

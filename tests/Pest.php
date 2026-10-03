@@ -15,6 +15,7 @@ use App\Services\Mail\MailboxTransportFactory;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Tests\Fakes\FakeTextGenerator;
 use Tests\Fakes\RecordingTransport;
 use Tests\TestCase;
@@ -129,4 +130,31 @@ function fakeAi(string|Closure|Throwable $reply = 'Loved your recent launch.', b
     });
 
     return $generator;
+}
+
+/**
+ * A raw RFC 5322 email, e.g. a lead's reply.
+ *
+ * @param  array<string, ?string>  $headers  Null removes a default header
+ */
+function rawEmail(array $headers = [], string $body = "Sounds interesting, tell me more.\n\nOn Mon, Arif wrote:\n> Hi there"): string
+{
+    $headers = array_merge([
+        'From' => 'Jane Lead <jane@acme.test>',
+        'To' => 'arif@softorio.com',
+        'Subject' => 'Re: Quick question',
+        'Date' => 'Fri, 02 Oct 2026 10:00:00 +0000',
+        'Message-ID' => '<'.Str::uuid().'@mail.acme.test>',
+        'MIME-Version' => '1.0',
+        'Content-Type' => 'text/plain; charset=UTF-8',
+    ], $headers);
+    $headers = array_filter($headers, fn (?string $value): bool => $value !== null);
+
+    $lines = [];
+
+    foreach ($headers as $name => $value) {
+        $lines[] = "{$name}: {$value}";
+    }
+
+    return implode("\r\n", $lines)."\r\n\r\n".str_replace("\n", "\r\n", $body);
 }
