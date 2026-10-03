@@ -152,6 +152,14 @@ class Workspace extends Model
         return $this->hasMany(Suppression::class);
     }
 
+    /**
+     * @return HasMany<Campaign, $this>
+     */
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
     public function addMember(User $user, WorkspaceRole $role): void
     {
         $this->members()->syncWithoutDetaching([

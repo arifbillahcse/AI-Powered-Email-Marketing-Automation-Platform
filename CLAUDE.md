@@ -41,6 +41,11 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Filament/Imports/LeadImporter.php`, `app/Filament/Exports/LeadExporter.php`
 - `app/Filament/App/Resources/Concerns/ScopedToWorkspace.php`: every
   workspace-owned resource must use it (see Conventions)
+- `app/Models/Campaign.php` (+ `CampaignStep`, `CampaignLead` = a lead's progress
+  in a campaign; the sending engine works through `campaign_leads`)
+- `app/Services/Campaigns/`: `TemplateRenderer` ({{variables|fallback}} +
+  spintax), `CampaignMessageBuilder` (the exact email a lead gets; Phase 5
+  sends with it), `CampaignAudience`, `CampaignLauncher`, `CampaignCloner`
 - `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme
@@ -75,6 +80,11 @@ Redis, no long-running processes, no Node.js). CI tests PostgreSQL and MySQL.
   always filter by `workspace_id` explicitly there.
 - Bulk actions on leads use `->fetchSelectedRecords(false)` and work on the
   selection query in chunks; never load a whole selection into memory.
+- Raw SQL that must run on both databases: in an `INSERT ... SELECT`, PostgreSQL
+  can't type bound parameters or bare NULLs in the SELECT list. Inline integers
+  (cast first), quote strings with the PDO `quote()`, and omit NULL columns.
+- Never render user/email HTML directly in the app: previews go in a
+  `sandbox=""` iframe.
 - Log user-visible lead changes on the timeline with `$lead->logActivity()`.
 - Roles: check `$user->roleIn($workspace)` with `canWrite()` (everyone but
   Client) for create/edit actions, and `canManageTeam()` (Owner/Admin) for

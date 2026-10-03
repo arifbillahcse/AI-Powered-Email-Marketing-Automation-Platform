@@ -51,7 +51,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 
 **Done when:** a 50k-row import runs in the background and leads can be filtered and tagged.
 
-### ⬜ Phase 4: Campaign and sequence builder
+### ✅ Phase 4: Campaign and sequence builder
 - Campaigns: draft, active, paused, completed
 - Multi-step sequences with per-step delays
 - Editor with `{{variables}}`, fallbacks (`{{first_name|there}}`), spintax (`{Hi|Hello}`)

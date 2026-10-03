@@ -7,6 +7,7 @@ use App\Enums\MailEncryption;
 use App\Enums\MailProvider;
 use App\Enums\SuppressionReason;
 use App\Enums\WorkspaceRole;
+use App\Models\Campaign;
 use App\Models\EmailAccount;
 use App\Models\Lead;
 use App\Models\LeadList;
@@ -57,7 +58,7 @@ class DatabaseSeeder extends Seeder
 
         // Sends through Mailpit (http://localhost:8025) inside Docker. Mailpit has
         // no IMAP, so "Test connection" reports an IMAP error locally; that's expected.
-        EmailAccount::factory()->for($agency)->create([
+        $mailbox = EmailAccount::factory()->for($agency)->create([
             'email' => 'outreach@demo-agency.test',
             'from_name' => 'Demo Outreach',
             'provider' => MailProvider::Custom,
@@ -95,6 +96,14 @@ class DatabaseSeeder extends Seeder
         $suppressions = app(SuppressionList::class);
         $suppressions->add($agency->id, 'competitor.com', SuppressionReason::Manual);
         $suppressions->add($agency->id, 'unsubscribed@example.org', SuppressionReason::Unsubscribed);
+
+        // A draft campaign ready to preview and launch (Phase 4).
+        $campaign = Campaign::factory()->for($agency)->withSteps()->create([
+            'name' => 'Founders outreach – demo',
+            'timezone' => 'Asia/Dhaka',
+        ]);
+        $campaign->leadLists()->attach($founders);
+        $campaign->emailAccounts()->attach($mailbox);
 
         $second = Workspace::factory()->create([
             'name' => 'Second Client Co',

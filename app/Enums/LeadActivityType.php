@@ -21,6 +21,7 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
     case Untagged = 'untagged';
     case StatusChanged = 'status_changed';
     case Suppressed = 'suppressed';
+    case AddedToCampaign = 'added_to_campaign';
 
     public function getLabel(): string
     {
@@ -34,13 +35,14 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::Untagged => 'Tag removed',
             self::StatusChanged => 'Status changed',
             self::Suppressed => 'Suppressed',
+            self::AddedToCampaign => 'Added to campaign',
         };
     }
 
     public function getColor(): string
     {
         return match ($this) {
-            self::Created, self::Imported => 'primary',
+            self::Created, self::Imported, self::AddedToCampaign => 'primary',
             self::Suppressed => 'danger',
             self::StatusChanged => 'info',
             default => 'gray',
@@ -57,6 +59,7 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::Tagged, self::Untagged => Heroicon::OutlinedTag,
             self::StatusChanged => Heroicon::OutlinedArrowsRightLeft,
             self::Suppressed => Heroicon::OutlinedNoSymbol,
+            self::AddedToCampaign => Heroicon::OutlinedRocketLaunch,
         };
     }
 }

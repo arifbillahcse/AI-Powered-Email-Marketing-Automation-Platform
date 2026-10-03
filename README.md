@@ -50,6 +50,18 @@ to several and switch between them from the sidebar menu.
 | Member | Run campaigns, manage leads, reply |
 | Client | View only |
 
+## Campaigns
+
+Outreach → **Campaigns**: write a multi-step sequence (follow-ups can reply in
+the same thread), personalise with `{{first_name|there}}` and spintax like
+`{Hi|Hello}`, pick the audience (lists and/or segments, suppressed leads are
+always excluded), the mailboxes to rotate across, the schedule (time zone,
+days, window, daily cap) and options (stop on reply, open/click tracking,
+plain text). **Preview** shows the exact email any lead will get. **Launch**
+checks everything first (sequence, active mailbox, mailing address, audience)
+and enrolls the leads. Campaigns can be paused, resumed, stopped, duplicated
+or saved as templates. Sending itself arrives in Phase 5.
+
 ## Leads
 
 Outreach → **Leads** imports CSVs in the background (100-row chunks, so it
