@@ -41,13 +41,13 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 
 **Done when:** a real mailbox can be added, send a test email, and show DNS health.
 
-### ⬜ Phase 3: Leads and lists
-- CSV/XLSX import: column mapping, dedupe, validation (queued, `imports` queue)
+### ✅ Phase 3: Leads and lists
+- CSV import: column mapping, dedupe, validation (queued, `imports` queue). XLSX: save as CSV for now
 - Custom fields (JSON) usable as `{{variables}}`
 - Lists, tags, segments, filters
 - Lead detail page with activity timeline
 - Global suppression list (email and domain), checked before every send
-- CSV export
+- CSV/XLSX export
 
 **Done when:** a 50k-row import runs in the background and leads can be filtered and tagged.
 

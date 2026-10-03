@@ -193,6 +193,14 @@ download it: `curl -sS https://getcomposer.org/installer | $PHP84`.
 | "Test connection" times out | Your host blocks outbound SMTP/IMAP ports. Ask support to open 465/587/993, or move to a VPS. |
 | `Specified key was too long` during migrate | Very old MySQL. Ask your host for MySQL 5.7+/MariaDB 10.3+. |
 
+## Large CSV imports
+
+Imports run in the background via the cron job, 100 rows per job. A 50,000-row
+file takes roughly 10–20 minutes on shared hosting; you get a notification
+(bell icon) when it's done. Uploads are limited by PHP's `upload_max_filesize`
+and `post_max_size` (set them to at least 20M in **Select PHP Version →
+Options**) and by Livewire's 12 MB temporary upload limit. Split bigger files.
+
 ## When to move to a VPS
 
 Shared hosting is fine for testing and for your own client hunting. Move to

@@ -34,6 +34,13 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   `Tests\Fakes\FakeDnsResolver`), `DomainHealthChecker`, `TrackingDomainVerifier`
 - `app/Policies/Concerns/AuthorizesWorkspaceRecords.php`: default policy for
   workspace-owned records (members view, everyone but Clients edit)
+- `app/Models/Lead.php` (+ `LeadList`, `Tag`, `Segment`, `LeadActivity`, `Suppression`)
+- `app/Services/Leads/`: `SuppressionList` (do-not-contact; sending must use
+  `Lead::whereNotSuppressed()`), `SegmentQuery` (segment rules → query),
+  `LeadBulkOperations` (chunked list/tag changes for huge selections)
+- `app/Filament/Imports/LeadImporter.php`, `app/Filament/Exports/LeadExporter.php`
+- `app/Filament/App/Resources/Concerns/ScopedToWorkspace.php`: every
+  workspace-owned resource must use it (see Conventions)
 - `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme
@@ -61,6 +68,14 @@ Redis, no long-running processes, no Node.js). CI tests PostgreSQL and MySQL.
 - Everything customer-owned is scoped to a workspace: give the model a
   `workspace_id` and a `workspace()` BelongsTo (Filament tenancy uses it to scope
   resources). Get the current one with `Filament::getTenant()`.
+- Every workspace-owned Filament resource uses the `ScopedToWorkspace` trait.
+  Filament's own tenant scope is a runtime global scope that doesn't exist in
+  queued jobs, so a queued export would otherwise include every workspace.
+- Code that runs in jobs (imports, exports, sending) has no current tenant:
+  always filter by `workspace_id` explicitly there.
+- Bulk actions on leads use `->fetchSelectedRecords(false)` and work on the
+  selection query in chunks; never load a whole selection into memory.
+- Log user-visible lead changes on the timeline with `$lead->logActivity()`.
 - Roles: check `$user->roleIn($workspace)` with `canWrite()` (everyone but
   Client) for create/edit actions, and `canManageTeam()` (Owner/Admin) for
   settings and team. Policies wrap these; the Client role is read-only everywhere.

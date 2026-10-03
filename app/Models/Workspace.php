@@ -112,6 +112,46 @@ class Workspace extends Model
         return $this->hasMany(SendingDomain::class);
     }
 
+    /**
+     * @return HasMany<Lead, $this>
+     */
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Lead::class);
+    }
+
+    /**
+     * @return HasMany<LeadList, $this>
+     */
+    public function leadLists(): HasMany
+    {
+        return $this->hasMany(LeadList::class);
+    }
+
+    /**
+     * @return HasMany<Tag, $this>
+     */
+    public function tags(): HasMany
+    {
+        return $this->hasMany(Tag::class);
+    }
+
+    /**
+     * @return HasMany<Segment, $this>
+     */
+    public function segments(): HasMany
+    {
+        return $this->hasMany(Segment::class);
+    }
+
+    /**
+     * @return HasMany<Suppression, $this>
+     */
+    public function suppressions(): HasMany
+    {
+        return $this->hasMany(Suppression::class);
+    }
+
     public function addMember(User $user, WorkspaceRole $role): void
     {
         $this->members()->syncWithoutDetaching([

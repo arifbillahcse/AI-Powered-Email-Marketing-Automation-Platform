@@ -5,6 +5,7 @@ namespace App\Filament\App\Resources\EmailAccounts;
 use App\Enums\EmailAccountStatus;
 use App\Enums\MailEncryption;
 use App\Enums\MailProvider;
+use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Filament\App\Resources\EmailAccounts\Pages\CreateEmailAccount;
 use App\Filament\App\Resources\EmailAccounts\Pages\EditEmailAccount;
 use App\Filament\App\Resources\EmailAccounts\Pages\ListEmailAccounts;
@@ -39,6 +40,8 @@ use UnitEnum;
 
 class EmailAccountResource extends Resource
 {
+    use ScopedToWorkspace;
+
     protected static ?string $model = EmailAccount::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;

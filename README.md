@@ -50,6 +50,20 @@ to several and switch between them from the sidebar menu.
 | Member | Run campaigns, manage leads, reply |
 | Client | View only |
 
+## Leads
+
+Outreach → **Leads** imports CSVs in the background (100-row chunks, so it
+also works on shared hosting): map columns, add everything to a list, tag it,
+and keep unmapped columns as custom fields usable as `{{variables}}`.
+Duplicates are merged by email. Leads can be filtered by status, list, tag,
+segment or suppression, changed in bulk, exported to CSV/XLSX, and each one
+has an activity timeline.
+
+**Lists** group leads, **Segments** are saved rule-based filters (e.g. "list is
+SaaS founders AND tag is hot"), and the **Suppression list** holds emails or
+whole domains that are never emailed. Unsubscribes and spam complaints can't
+be removed from it.
+
 ## Email accounts and domains
 
 Infrastructure → **Email accounts** connects mailboxes over SMTP/IMAP (Google,

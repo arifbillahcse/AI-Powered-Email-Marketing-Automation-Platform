@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\SendingDomains;
 
 use App\Enums\DnsCheckStatus;
+use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Filament\App\Resources\SendingDomains\Pages\CreateSendingDomain;
 use App\Filament\App\Resources\SendingDomains\Pages\ListSendingDomains;
 use App\Filament\App\Resources\SendingDomains\Pages\ViewSendingDomain;
@@ -26,6 +27,8 @@ use UnitEnum;
 
 class SendingDomainResource extends Resource
 {
+    use ScopedToWorkspace;
+
     protected static ?string $model = SendingDomain::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGlobeAlt;

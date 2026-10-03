@@ -2,12 +2,18 @@
 
 namespace Database\Seeders;
 
+use App\Enums\LeadStatus;
 use App\Enums\MailEncryption;
 use App\Enums\MailProvider;
+use App\Enums\SuppressionReason;
 use App\Enums\WorkspaceRole;
 use App\Models\EmailAccount;
+use App\Models\Lead;
+use App\Models\LeadList;
+use App\Models\Segment;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Leads\SuppressionList;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -64,6 +70,31 @@ class DatabaseSeeder extends Seeder
             'imap_port' => 143,
             'imap_encryption' => MailEncryption::None,
         ]);
+
+        // Leads, lists, tags, a segment and suppressions for Phase 3.
+        $founders = LeadList::factory()->for($agency)->create(['name' => 'SaaS founders']);
+        $agencies = LeadList::factory()->for($agency)->create(['name' => 'Marketing agencies']);
+
+        Lead::factory()->for($agency)->count(25)->create()->each(function (Lead $lead, int $i) use ($founders, $agencies): void {
+            $lead->lists()->attach($i % 2 ? $founders : $agencies);
+            $lead->syncTagNames($i % 3 ? ['cold'] : ['hot', 'priority']);
+
+            if ($i % 7 === 0) {
+                $lead->update(['status' => LeadStatus::Interested, 'custom_fields' => ['company_size' => '11-50']]);
+            }
+        });
+
+        Segment::factory()->for($agency)->create([
+            'name' => 'Hot founders',
+            'rules' => [
+                ['field' => 'list', 'operator' => 'in', 'value' => (string) $founders->id],
+                ['field' => 'tag', 'operator' => 'has', 'value' => 'hot'],
+            ],
+        ]);
+
+        $suppressions = app(SuppressionList::class);
+        $suppressions->add($agency->id, 'competitor.com', SuppressionReason::Manual);
+        $suppressions->add($agency->id, 'unsubscribed@example.org', SuppressionReason::Unsubscribed);
 
         $second = Workspace::factory()->create([
             'name' => 'Second Client Co',
