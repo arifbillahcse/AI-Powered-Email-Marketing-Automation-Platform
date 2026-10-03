@@ -208,6 +208,8 @@ class AiGenerationService
         $affected = 0;
 
         (clone $selection)
+            // The table's eager loads need columns we don't select here.
+            ->setEagerLoads([])
             ->where('ai_generations.workspace_id', $workspaceId)
             ->select('ai_generations.id')
             ->reorder()
