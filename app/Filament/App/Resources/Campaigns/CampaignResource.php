@@ -21,7 +21,6 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Toggle;
@@ -120,16 +119,13 @@ class CampaignResource extends Resource
                                 ->maxLength(255)
                                 ->columnSpan(3),
                         ]),
+                        // One field for both modes: in plain-text mode the HTML is
+                        // converted to text when the email is built.
                         RichEditor::make('body')
                             ->hiddenLabel()
                             ->required()
-                            ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']])
-                            ->visible(fn (Get $get): bool => ! $get('../../plain_text')),
-                        Textarea::make('body')
-                            ->hiddenLabel()
-                            ->required()
-                            ->rows(10)
-                            ->visible(fn (Get $get): bool => (bool) $get('../../plain_text')),
+                            ->helperText(fn (Get $get): ?string => $get('../../plain_text') ? 'Plain-text mode: formatting is removed when sending; links become "text (url)".' : null)
+                            ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']]),
                     ]),
             ]);
     }

@@ -63,8 +63,8 @@ it('previews the email for a lead in the audience', function () {
 
     Livewire::test(EditCampaign::class, ['record' => $campaign->getRouteKey()])
         ->mountAction('preview')
-        ->assertSee('Quick question, Rahim')
-        ->assertSee($lead->email);
+        ->assertMountedActionModalSee('Quick question, Rahim')
+        ->assertMountedActionModalSee($lead->email);
 });
 
 it('shows why a campaign cannot launch', function () {
