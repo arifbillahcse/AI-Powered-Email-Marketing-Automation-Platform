@@ -20,7 +20,8 @@ use Livewire\Livewire;
  */
 function uniboxThread(Workspace $workspace, array $thread = [], string $body = 'Yes, let\'s talk.'): InboxThread
 {
-    $mailbox = EmailAccount::factory()->for($workspace)->create(['email' => 'arif@softorio.com', 'from_name' => 'Arif']);
+    $mailbox = EmailAccount::query()->where('workspace_id', $workspace->id)->where('email', 'arif@softorio.com')->first()
+        ?? EmailAccount::factory()->for($workspace)->create(['email' => 'arif@softorio.com', 'from_name' => 'Arif']);
     $lead = Lead::factory()->for($workspace)->create(['status' => LeadStatus::Contacted]);
     $campaign = Campaign::factory()->for($workspace)->withSteps()->create();
 
