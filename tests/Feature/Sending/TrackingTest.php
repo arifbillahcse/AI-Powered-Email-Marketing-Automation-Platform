@@ -48,7 +48,7 @@ it('redirects signed clicks and refuses tampered ones', function () {
 it('shows an unsubscribe page and unsubscribes on confirm', function () {
     $this->get("/u/{$this->message->token}")->assertOk()->assertSee('Unsubscribe?');
 
-    $this->post("/u/{$this->message->token}")->assertOk()->assertSee('You\'re unsubscribed');
+    $this->post("/u/{$this->message->token}")->assertOk()->assertSee("You're unsubscribed", escape: false);
 
     expect(Suppression::sole()->reason)->toBe(SuppressionReason::Unsubscribed)
         ->and(CampaignLead::sole()->status)->toBe(CampaignLeadStatus::Unsubscribed)
