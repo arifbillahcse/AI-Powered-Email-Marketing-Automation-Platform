@@ -15,6 +15,7 @@ use App\Services\Campaigns\CampaignCloner;
 use App\Services\Campaigns\CampaignLauncher;
 use App\Services\Campaigns\CampaignLaunchException;
 use App\Services\Campaigns\CampaignMessageBuilder;
+use App\Services\Sending\SendingDiagnostics;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
@@ -254,6 +255,37 @@ class CampaignActions
                     ])
                     ->send();
             });
+    }
+
+    /**
+     * Why the campaign is (or isn't) sending right now, check by check.
+     */
+    public static function sendingStatus(): Action
+    {
+        return Action::make('sendingStatus')
+            ->label('Sending status')
+            ->icon(Heroicon::OutlinedSignal)
+            ->color('gray')
+            ->authorize('view')
+            ->visible(fn (Campaign $record): bool => ! $record->is_template)
+            ->modalHeading(fn (Campaign $record): string => app(SendingDiagnostics::class)->check($record)['sending']
+                ? 'Sending normally'
+                : 'Not sending right now')
+            ->modalDescription('Checked against the same rules the sender uses every minute.')
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close')
+            ->schema([
+                Html::make(function (Campaign $record): HtmlString {
+                    $icons = [SendingDiagnostics::OK => '✅', SendingDiagnostics::INFO => 'ℹ️', SendingDiagnostics::BLOCKER => '⛔'];
+
+                    $items = collect(app(SendingDiagnostics::class)->check($record)['checks'])
+                        ->map(fn (array $check): string => '<li style="display:flex;gap:.5rem;padding:.25rem 0;"><span aria-hidden="true">'
+                            .$icons[$check['level']].'</span><span>'.e($check['message']).'</span></li>')
+                        ->implode('');
+
+                    return new HtmlString('<ul style="list-style:none;margin:0;padding:0;font-size:.875rem;">'.$items.'</ul>');
+                }),
+            ]);
     }
 
     public static function complete(): Action

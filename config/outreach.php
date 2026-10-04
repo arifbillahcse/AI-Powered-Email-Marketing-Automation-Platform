@@ -18,8 +18,11 @@ return [
         'default_min_delay_seconds' => 90,
         'default_max_delay_seconds' => 300,
         'min_delay_floor_seconds' => 30,
-        'default_send_window' => ['09:00', '17:00'],
-        'default_send_days' => [1, 2, 3, 4, 5], // ISO weekdays, Mon-Fri
+        // Mailboxes are open all day by default: each campaign has its own
+        // schedule, and both must be open to send. Narrow a mailbox's window
+        // only to restrict that mailbox.
+        'default_send_window' => ['00:00', '23:59'],
+        'default_send_days' => [1, 2, 3, 4, 5, 6, 7], // ISO weekdays
 
         // Seconds before an SMTP/IMAP connection test gives up.
         'connect_timeout' => (int) env('MAILBOX_CONNECT_TIMEOUT', 10),
@@ -154,7 +157,9 @@ return [
     */
 
     'queue' => [
-        'run_from_scheduler' => (bool) env('QUEUE_RUN_FROM_SCHEDULER', false),
+        // On by default with the database queue (shared hosting has no
+        // long-running workers); Redis setups use Horizon instead.
+        'run_from_scheduler' => (bool) env('QUEUE_RUN_FROM_SCHEDULER', env('QUEUE_CONNECTION', 'database') === 'database'),
         // Highest priority first.
         'queues' => 'sending,imap,default,ai,imports',
     ],

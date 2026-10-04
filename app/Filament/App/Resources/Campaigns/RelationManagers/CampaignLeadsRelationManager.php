@@ -30,6 +30,13 @@ class CampaignLeadsRelationManager extends RelationManager
         return true;
     }
 
+    protected ?int $stepCount = null;
+
+    protected function stepCount(): int
+    {
+        return $this->stepCount ??= $this->getOwnerRecord()->steps()->count();
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -39,8 +46,14 @@ class CampaignLeadsRelationManager extends RelationManager
                     ->label('Lead')
                     ->description(fn (CampaignLead $record): ?string => $record->lead->fullName() ?: null)
                     ->searchable(),
-                TextColumn::make('status')->badge(),
-                TextColumn::make('steps_sent')->label('Emails sent'),
+                TextColumn::make('status')
+                    ->badge()
+                    ->description(fn (CampaignLead $record): ?string => $record->status === CampaignLeadStatus::Active
+                        ? 'Next: email '.min($record->steps_sent + 1, $this->stepCount()).' of '.$this->stepCount()
+                        : null),
+                TextColumn::make('steps_sent')
+                    ->label('Emails sent')
+                    ->formatStateUsing(fn ($state): string => "{$state} of {$this->stepCount()}"),
                 TextColumn::make('emailAccount.email')->label('Mailbox')->placeholder('Not assigned yet'),
                 TextColumn::make('next_send_at')
                     ->label('Next email')

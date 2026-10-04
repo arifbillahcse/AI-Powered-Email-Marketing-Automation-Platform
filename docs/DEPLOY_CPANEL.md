@@ -95,7 +95,7 @@ DB_PASSWORD=your-db-password
 SESSION_DRIVER=database
 CACHE_STORE=database
 QUEUE_CONNECTION=database
-QUEUE_RUN_FROM_SCHEDULER=true
+QUEUE_RUN_FROM_SCHEDULER=true   # the default with QUEUE_CONNECTION=database
 
 # App emails (invitations, password resets): use a cPanel email account
 MAIL_MAILER=smtp

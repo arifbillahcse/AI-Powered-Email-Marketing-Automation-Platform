@@ -50,6 +50,10 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   leads per mailbox), `SendWindow`, `TrackingUrls` (signed click links),
   `LinkTracker`, `EngagementRecorder` (opens/clicks/unsubscribes/bounces),
   `SmtpFailure`, `BounceClassifier` (DSN parser for Phase 7)
+- `app/Services/Sending/SendingDiagnostics.php`: why a campaign isn't sending (mirrors
+  SendScheduler's rules; keep the two in sync)
+- `app/Filament/App/Actions/SpreadsheetImportAction.php`: CSV import that also takes .xlsx
+  (`Services/Leads/SpreadsheetConverter` turns the first sheet into CSV)
 - `app/Jobs/SendCampaignEmail.php`: sends one step to one lead; pinned to a
   step number, and `email_messages` is unique per (campaign lead, step)
 - `routes/tracking.php`: open pixel, click redirect, unsubscribe (no session/CSRF)

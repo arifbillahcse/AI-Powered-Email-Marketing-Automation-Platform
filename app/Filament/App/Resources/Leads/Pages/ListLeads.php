@@ -2,13 +2,13 @@
 
 namespace App\Filament\App\Resources\Leads\Pages;
 
+use App\Filament\App\Actions\SpreadsheetImportAction;
 use App\Filament\App\Resources\Leads\LeadResource;
 use App\Filament\Exports\LeadExporter;
 use App\Filament\Imports\LeadImporter;
 use App\Models\Lead;
 use Filament\Actions\CreateAction;
 use Filament\Actions\ExportAction;
-use Filament\Actions\ImportAction;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
@@ -21,7 +21,7 @@ class ListLeads extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            ImportAction::make()
+            SpreadsheetImportAction::make()
                 ->label('Import CSV')
                 ->icon(Heroicon::OutlinedArrowUpTray)
                 ->importer(LeadImporter::class)

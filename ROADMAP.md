@@ -42,7 +42,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 **Done when:** a real mailbox can be added, send a test email, and show DNS health.
 
 ### ✅ Phase 3: Leads and lists
-- CSV import: column mapping, dedupe, validation (queued, `imports` queue). XLSX: save as CSV for now
+- CSV and Excel (.xlsx, first sheet) import: column mapping, dedupe, validation (queued, `imports` queue)
 - Custom fields (JSON) usable as `{{variables}}`
 - Lists, tags, segments, filters
 - Lead detail page with activity timeline
@@ -76,6 +76,9 @@ Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 - `email_events` table (indexed; not partitioned, to stay portable across
   PostgreSQL and MySQL; archiving comes in Phase 16)
 - Retries and failures visible in Horizon
+- "Sending status" on every campaign: plain-language reasons it isn't sending
+  right now (schedules, limits, mailbox gaps, paused mailboxes, stuck queue);
+  `campaigns:send` prints the same reasons
 
 **Done when:** a campaign sends real email at the configured pace and events are recorded.
 

@@ -220,7 +220,7 @@ class EmailAccountResource extends Resource
                     ->required(),
                 TimePicker::make('send_window_end')
                     ->label('Send until')
-                    ->helperText('In the workspace time zone.')
+                    ->helperText('In the workspace time zone. Usually leave this open all day: each campaign has its own schedule, and emails only go out when both are open.')
                     ->seconds(false)
                     ->format('H:i')
                     ->after('send_window_start')

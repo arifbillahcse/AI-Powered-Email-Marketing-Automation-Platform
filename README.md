@@ -64,6 +64,11 @@ or saved as templates.
 
 ## Sending
 
+Each campaign has a schedule (days and hours in a time zone), and each
+mailbox has its own window (open all day by default). Emails go out only
+when both are open. If an active campaign isn't sending, its page says why
+(⚠ at the top, and **Sending status** lists every check).
+
 Every minute `campaigns:send` (scheduled) picks one due lead per available
 mailbox and queues the email on the `sending` queue. It honours each mailbox's
 daily limit, random gap and send window, the campaign's daily cap, days, hours
@@ -122,7 +127,7 @@ match the event log exactly. **Export CSV** downloads any breakdown.
 
 ## Leads
 
-Outreach → **Leads** imports CSVs in the background (100-row chunks, so it
+Outreach → **Leads** imports CSV or Excel (.xlsx) files in the background (100-row chunks, so it
 also works on shared hosting): map columns, add everything to a list, tag it,
 and keep unmapped columns as custom fields usable as `{{variables}}`.
 Duplicates are merged by email. Leads can be filtered by status, list, tag,

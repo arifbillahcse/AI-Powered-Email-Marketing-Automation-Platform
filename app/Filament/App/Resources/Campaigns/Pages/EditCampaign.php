@@ -3,10 +3,12 @@
 namespace App\Filament\App\Resources\Campaigns\Pages;
 
 use App\Enums\CampaignLeadStatus;
+use App\Enums\CampaignStatus;
 use App\Filament\App\Resources\Campaigns\CampaignActions;
 use App\Filament\App\Resources\Campaigns\CampaignResource;
 use App\Models\Campaign;
 use App\Models\EmailMessage;
+use App\Services\Sending\SendingDiagnostics;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
@@ -34,7 +36,13 @@ class EditCampaign extends EditRecord
         $unsubscribed = $campaign->campaignLeads()->where('status', CampaignLeadStatus::Unsubscribed->value)->count();
         $replied = $campaign->campaignLeads()->whereNotNull('replied_at')->count();
 
+        // An active campaign that can't send says why, right at the top.
+        $blocked = $campaign->status === CampaignStatus::Active
+            ? app(SendingDiagnostics::class)->headline($campaign)
+            : null;
+
         return collect([
+            $blocked ? "⚠ Not sending right now: {$blocked}" : null,
             'Status: '.$campaign->status->getLabel(),
             Number::format((int) $stats?->sent).' sent',
             $campaign->track_opens ? Number::format((int) $stats?->opened).' opened' : null,
@@ -49,6 +57,7 @@ class EditCampaign extends EditRecord
     {
         return [
             CampaignActions::preview(),
+            CampaignActions::sendingStatus(),
             CampaignActions::launch(),
             CampaignActions::pause(),
             CampaignActions::resume(),
