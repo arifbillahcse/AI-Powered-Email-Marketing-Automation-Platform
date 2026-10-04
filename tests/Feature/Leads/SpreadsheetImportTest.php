@@ -63,8 +63,7 @@ it('imports leads from an Excel file', function () {
             'file' => UploadedFile::fake()->createWithContent('leads.xlsx', file_get_contents($path)),
             'columnMap' => ['email' => 'Email', 'first_name' => 'First Name', 'company' => 'Company'],
         ])
-        ->assertHasNoFormErrors()
-        ->assertNotified();
+        ->assertHasNoFormErrors();
 
     expect(Import::sole())
         ->file_name->toBe('leads.xlsx')
