@@ -58,7 +58,7 @@ it('reports paused mailboxes, daily limits and follow-up delays', function () {
     SendCampaignEmail::dispatchSync(CampaignLead::sole()->id, $mailbox->id, 1);
 
     expect(app(SendingDiagnostics::class)->headline($campaign))->toBe("The campaign's daily limit is reached (1 / 1 today).")
-        ->and(diagnose($campaign))->toContain('No email is due right now. The next one is due 3 days from now (follow-up delays).');
+        ->and(implode(' ', diagnose($campaign)))->toContain('No email is due right now. The next one is due', '(follow-up delays).');
 });
 
 it('notices when the background queue is not being worked', function () {

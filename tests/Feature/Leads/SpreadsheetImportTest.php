@@ -2,9 +2,10 @@
 
 use App\Filament\App\Actions\SpreadsheetImportAction;
 use App\Filament\App\Resources\Leads\Pages\ListLeads;
-use App\Models\Lead;
 use App\Services\Leads\SpreadsheetConverter;
+use Filament\Actions\Imports\Models\Import;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Livewire\Livewire;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -47,7 +48,10 @@ it('accepts .xlsx files in the lead import', function () {
 });
 
 it('imports leads from an Excel file', function () {
-    $workspace = actingInWorkspace();
+    // The queued import itself is covered by LeadImporterTest; here the
+    // .xlsx must be read, mapped and counted like a CSV.
+    Bus::fake();
+    actingInWorkspace();
     $path = xlsxFile([
         ['Email', 'First Name', 'Company'],
         ['jane@acme.test', 'Jane', 'Acme'],
@@ -59,8 +63,10 @@ it('imports leads from an Excel file', function () {
             'file' => UploadedFile::fake()->createWithContent('leads.xlsx', file_get_contents($path)),
             'columnMap' => ['email' => 'Email', 'first_name' => 'First Name', 'company' => 'Company'],
         ])
-        ->assertHasNoFormErrors();
+        ->assertHasNoFormErrors()
+        ->assertNotified();
 
-    expect(Lead::query()->where('workspace_id', $workspace->id)->orderBy('email')->pluck('first_name', 'email')->all())
-        ->toBe(['jane@acme.test' => 'Jane', 'rahim@softorio.test' => 'Rahim']);
+    expect(Import::sole())
+        ->file_name->toBe('leads.xlsx')
+        ->total_rows->toBe(2);
 });
