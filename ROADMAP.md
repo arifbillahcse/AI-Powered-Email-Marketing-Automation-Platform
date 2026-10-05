@@ -109,6 +109,8 @@ Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 - Unified inbox with filters (unread, label, campaign, mailbox, out-of-office)
 - Lead labels: Interested, Meeting Booked, Not Interested, Closed
 - Reply in-thread from the original mailbox (queued; suppression-checked)
+- One-off email to a single lead (Send email on the lead), outside any
+  campaign; it starts a Unibox conversation so the reply is matched too
 - Out-of-office detection (rules: Auto-Submitted/X-Autoreply/Precedence
   headers and multilingual subject patterns); shown, but sequences continue
 

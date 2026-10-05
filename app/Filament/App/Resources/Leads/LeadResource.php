@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\Leads;
 
 use App\Enums\LeadStatus;
+use App\Filament\App\Actions\SendLeadEmailAction;
 use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Filament\App\Resources\Leads\Pages\CreateLead;
 use App\Filament\App\Resources\Leads\Pages\EditLead;
@@ -247,6 +248,7 @@ class LeadResource extends Resource
             ->emptyStateDescription('Import a CSV or add leads one by one.')
             ->recordActions([
                 ActionGroup::make([
+                    SendLeadEmailAction::make(),
                     ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make(),

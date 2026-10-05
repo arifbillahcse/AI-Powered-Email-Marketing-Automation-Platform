@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\InboxMessageStatus;
 use App\Enums\LeadActivityType;
+use App\Enums\LeadStatus;
 use App\Models\EmailAccount;
 use App\Models\InboxMessage;
 use App\Models\InboxThread;
@@ -22,7 +23,8 @@ use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
 /**
- * Sends one Unibox reply from the conversation's mailbox, in the same
+ * Sends one hand-written email (a Unibox reply, or a one-off email that
+ * starts a conversation) from the conversation's mailbox, in the same
  * thread. Not retried automatically (a retry could send it twice); the
  * user is told when it fails.
  */
@@ -109,7 +111,19 @@ class SendInboxReply implements ShouldQueue
             'last_message_at' => now(),
         ])->save();
 
-        $lead->logActivity(LeadActivityType::ReplySent, 'Reply sent: '.($message->subject ?? '(no subject)'));
+        $lead->forceFill(['last_contacted_at' => now()]);
+
+        if ($lead->status === LeadStatus::New) {
+            $lead->status = LeadStatus::Contacted;
+        }
+
+        $lead->save();
+
+        if ($message->in_reply_to) {
+            $lead->logActivity(LeadActivityType::ReplySent, 'Reply sent: '.($message->subject ?? '(no subject)'));
+        } else {
+            $lead->logActivity(LeadActivityType::EmailSent, 'Sent "'.($message->subject ?? '(no subject)').'" (one-off email)');
+        }
     }
 
     protected function markFailed(InboxMessage $message, string $error): void
@@ -118,7 +132,7 @@ class SendInboxReply implements ShouldQueue
 
         if ($message->user_id && ($user = User::query()->find($message->user_id))) {
             Notification::make()
-                ->title('Your reply wasn\'t sent')
+                ->title($message->in_reply_to ? 'Your reply wasn\'t sent' : 'Your email to '.$message->to_email.' wasn\'t sent')
                 ->body($error)
                 ->danger()
                 ->sendToDatabase($user);

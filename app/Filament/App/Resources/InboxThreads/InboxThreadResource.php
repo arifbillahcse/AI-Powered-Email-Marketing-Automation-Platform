@@ -27,7 +27,8 @@ use Illuminate\Support\Number;
 use UnitEnum;
 
 /**
- * The Unibox: replies from every mailbox in one place.
+ * The Unibox: replies from every mailbox in one place, plus the one-off
+ * emails sent to single leads.
  */
 class InboxThreadResource extends Resource
 {
@@ -92,6 +93,7 @@ class InboxThreadResource extends Resource
                     ->badge(),
                 TextColumn::make('campaign.name')
                     ->label('Campaign')
+                    ->placeholder('One-off email')
                     ->toggleable(),
                 TextColumn::make('emailAccount.email')
                     ->label('Mailbox')

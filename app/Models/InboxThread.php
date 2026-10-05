@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A Unibox conversation: everything between one lead and us about one
- * campaign (the campaign's emails, their replies, our replies).
+ * campaign (the campaign's emails, their replies, our replies), or one
+ * started by a one-off email (no campaign).
  */
 class InboxThread extends Model
 {
@@ -16,6 +17,8 @@ class InboxThread extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'campaign_lead_id' => null,
+        'campaign_id' => null,
         'email_account_id' => null,
         'subject' => null,
         'snippet' => null,

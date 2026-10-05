@@ -20,9 +20,10 @@ use Illuminate\Support\Facades\DB;
  * Decides what an email that arrived in a connected mailbox means:
  *
  * - a bounce (delivery report): hard bounces suppress the lead;
- * - a reply to a campaign email: matched by In-Reply-To/References, or else
- *   by the sender being a lead this mailbox emailed. It goes to the Unibox,
- *   and real replies (not out-of-office) stop the sequence;
+ * - a reply to a campaign email or to one of our hand-written emails:
+ *   matched by In-Reply-To/References, or else by the sender being a lead
+ *   this mailbox emailed. It goes to the Unibox, and real replies (not
+ *   out-of-office) stop the sequence;
  * - anything else: ignored and never stored (it's the user's own mail).
  *
  * Safe to run twice on the same email.
@@ -49,9 +50,9 @@ class InboundMailProcessor
             return null;
         }
 
-        [$campaignLead, $sent] = $this->match($mailbox, $email);
+        [$thread, $campaignLead, $sent] = $this->match($mailbox, $email);
 
-        if (! $campaignLead) {
+        if (! $thread && ! $campaignLead) {
             return null;
         }
 
@@ -64,27 +65,35 @@ class InboundMailProcessor
         $autoReply = $this->autoReplies->isAutoReply($email);
 
         try {
-            $message = DB::transaction(fn (): InboxMessage => $this->store($mailbox, $campaignLead, $sent, $email, $messageId, $autoReply, $uid));
+            $message = DB::transaction(fn (): InboxMessage => $this->store($mailbox, $thread, $campaignLead, $sent, $email, $messageId, $autoReply, $uid));
         } catch (UniqueConstraintViolationException) {
             return null; // Imported by a parallel run.
         }
 
+        $leadId = $campaignLead->lead_id ?? $thread->lead_id;
+
         if ($autoReply) {
-            Lead::query()->find($campaignLead->lead_id)?->logActivity(LeadActivityType::AutoReplied, 'Auto-reply: '.($email->subject ?? '(no subject)'));
-        } else {
+            Lead::query()->find($leadId)?->logActivity(LeadActivityType::AutoReplied, 'Auto-reply: '.($email->subject ?? '(no subject)'));
+        } elseif ($campaignLead) {
             $this->engagement->reply($campaignLead, $sent, $email->subject);
+        } elseif ($lead = Lead::query()->find($leadId)) {
+            $this->engagement->leadReplied($lead, $email->subject);
         }
 
         return $message;
     }
 
     /**
-     * @return array{0: ?CampaignLead, 1: ?EmailMessage}
+     * The conversation the email belongs to: an existing thread (a reply to
+     * one of our hand-written emails) and/or the campaign lead it answers.
+     *
+     * @return array{0: ?InboxThread, 1: ?CampaignLead, 2: ?EmailMessage}
      */
     protected function match(EmailAccount $mailbox, ParsedEmail $email): array
     {
         $workspaceId = $mailbox->workspace_id;
         $sent = null;
+        $leadId = null;
 
         if ($ids = $email->threadIds()) {
             $sent = EmailMessage::query()
@@ -93,7 +102,7 @@ class InboundMailProcessor
                 ->latest('id')
                 ->first();
 
-            // A reply to one of our Unibox replies continues that thread.
+            // A reply to one of our hand-written emails continues that thread.
             if (! $sent) {
                 $outbound = InboxMessage::query()
                     ->where('workspace_id', $workspaceId)
@@ -103,7 +112,9 @@ class InboundMailProcessor
                     ->first();
 
                 if ($outbound) {
-                    return [CampaignLead::query()->find($outbound->thread->campaign_lead_id), null];
+                    $campaignLeadId = $outbound->thread->campaign_lead_id;
+
+                    return [$outbound->thread, $campaignLeadId ? CampaignLead::query()->find($campaignLeadId) : null, null];
                 }
             }
         }
@@ -123,12 +134,26 @@ class InboundMailProcessor
             }
         }
 
-        return [$sent ? CampaignLead::query()->find($sent->campaign_lead_id) : null, $sent];
+        if ($sent) {
+            return [null, CampaignLead::query()->find($sent->campaign_lead_id), $sent];
+        }
+
+        // Or a lead this mailbox sent a one-off email to.
+        $thread = $leadId ? InboxThread::query()
+            ->where('lead_id', $leadId)
+            ->where('email_account_id', $mailbox->getKey())
+            ->whereNull('campaign_lead_id')
+            ->latest('last_message_at')
+            ->first() : null;
+
+        return [$thread, null, null];
     }
 
-    protected function store(EmailAccount $mailbox, CampaignLead $campaignLead, ?EmailMessage $sent, ParsedEmail $email, string $messageId, bool $autoReply, ?int $uid): InboxMessage
+    protected function store(EmailAccount $mailbox, ?InboxThread $thread, ?CampaignLead $campaignLead, ?EmailMessage $sent, ParsedEmail $email, string $messageId, bool $autoReply, ?int $uid): InboxMessage
     {
-        $thread = InboxThread::query()->where('campaign_lead_id', $campaignLead->getKey())->lockForUpdate()->first();
+        $thread = $thread
+            ? InboxThread::query()->whereKey($thread->getKey())->lockForUpdate()->firstOrFail()
+            : InboxThread::query()->where('campaign_lead_id', $campaignLead->getKey())->lockForUpdate()->first();
 
         if (! $thread) {
             $thread = new InboxThread;

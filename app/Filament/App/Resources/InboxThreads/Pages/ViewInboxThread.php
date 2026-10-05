@@ -22,8 +22,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * One conversation: the campaign emails we sent, the lead's replies and
- * our answers, oldest first. Bodies are plain text, escaped by Blade.
+ * One conversation: the campaign emails (or the one-off email) we sent, the
+ * lead's replies and our answers, oldest first. Bodies are plain text, escaped by Blade.
  *
  * @property InboxThread $record
  */
@@ -66,7 +66,7 @@ class ViewInboxThread extends ViewRecord
         $mailboxes = EmailAccount::query()->where('workspace_id', $this->record->workspace_id)->pluck('email', 'id');
 
         $sent = EmailMessage::query()
-            ->where('campaign_lead_id', $this->record->campaign_lead_id)
+            ->where('campaign_lead_id', $this->record->campaign_lead_id ?? 0) // none for a one-off email
             ->whereNotNull('sent_at')
             ->get(['id', 'email_account_id', 'step_position', 'subject', 'sent_at', 'bounced_at'])
             ->map(fn (EmailMessage $message): array => [

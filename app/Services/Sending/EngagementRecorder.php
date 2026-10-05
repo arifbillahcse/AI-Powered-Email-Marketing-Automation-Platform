@@ -139,17 +139,23 @@ class EngagementRecorder
 
         $lead = Lead::query()->find($campaignLead->lead_id);
 
-        if (! $lead) {
-            return;
+        if ($lead) {
+            $this->leadReplied($lead, $subject, ['campaign_id' => $campaignLead->campaign_id]);
         }
+    }
 
+    /**
+     * A lead answered (a campaign email, or a one-off email with no campaign).
+     *
+     * @param  array<string, mixed>  $properties
+     */
+    public function leadReplied(Lead $lead, ?string $subject, array $properties = []): void
+    {
         if (in_array($lead->status, [LeadStatus::New, LeadStatus::Contacted], true)) {
             $lead->update(['status' => LeadStatus::Replied]);
         }
 
-        $lead->logActivity(LeadActivityType::Replied, 'Replied'.($subject ? " to \"{$subject}\"" : ''), [
-            'campaign_id' => $campaignLead->campaign_id,
-        ]);
+        $lead->logActivity(LeadActivityType::Replied, 'Replied'.($subject ? " to \"{$subject}\"" : ''), $properties);
     }
 
     protected function stopLead(Lead $lead, CampaignLeadStatus $status): void

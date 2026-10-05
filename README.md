@@ -116,6 +116,13 @@ conversation to read it, label the lead (Interested, Meeting booked, Not
 interested, Closed) and reply: the reply goes out from the original mailbox
 in the same thread.
 
+To email one lead outside any campaign, use **Send email** on the lead (its
+page, or the row menu in Leads). Pick the mailbox, write a subject and
+message (`{{variables}}` and spintax work), and it goes out within a minute,
+ignoring campaign schedules and limits. It starts a Unibox conversation
+("One-off email"), so the lead's reply lands there. Suppressed leads and
+paused or failing mailboxes are refused.
+
 ## Analytics
 
 Insights → **Analytics** shows sent, open, click, reply, bounce and
