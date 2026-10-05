@@ -139,11 +139,11 @@ it('only sends from this workspace\'s active mailboxes', function () {
     ['lead' => $lead] = directEmailSetup($workspace);
     $paused = EmailAccount::factory()->for($workspace)->paused()->create();
 
-    Livewire::test(ViewLead::class, ['record' => $lead->getRouteKey()])
-        ->callAction('sendEmail', data: ['email_account_id' => $otherMailbox->id, 'subject' => 'Hello', 'body' => 'Hi'])
-        ->assertHasFormErrors(['email_account_id'])
-        ->callAction('sendEmail', data: ['email_account_id' => $paused->id, 'subject' => 'Hello', 'body' => 'Hi'])
-        ->assertHasFormErrors(['email_account_id']);
+    foreach ([$otherMailbox, $paused] as $mailbox) {
+        Livewire::test(ViewLead::class, ['record' => $lead->getRouteKey()])
+            ->callAction('sendEmail', data: ['email_account_id' => $mailbox->id, 'subject' => 'Hello', 'body' => 'Hi'])
+            ->assertHasFormErrors(['email_account_id']);
+    }
 
     expect($transport->sent)->toBe([]);
 });
