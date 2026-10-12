@@ -89,6 +89,16 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   `WorkspaceAlerts` (database notifications to owners/admins)
 - Auto-paused mailboxes and campaigns carry `paused_reason`; resuming clears it
   and sets `safety_reset_at` (rates only count emails sent after it)
+- `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
+  `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
+  monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),
+  `SubscriptionManager` (trial → active → past_due → expired; every period is an
+  `Invoice`; `markPaid()` is idempotent), `Gateways/` (Stripe, SSLCommerz, bKash,
+  manual; payments are re-verified with the gateway, never trusted from the
+  request), `AccountBanner`. Callbacks in `routes/billing.php` (no session/CSRF)
+- `app/Filament/App/Pages/Billing.php`; admin: `app/Filament/Admin/Resources/`
+  (Plans, Workspaces, Users, Invoices; `Concerns/SuperAdminOnly`),
+  `Pages/SystemHealth` (`Services/Admin/SystemHealth`), `Services/Admin/Impersonator`
 - `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target, AI models/prices
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme

@@ -11,6 +11,7 @@ use App\Models\CampaignLead;
 use App\Models\EmailAccount;
 use App\Models\EmailMessage;
 use App\Models\Workspace;
+use App\Services\Billing\Entitlements;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,12 @@ class SendingDiagnostics
         }
 
         $blocked = false;
+
+        // Plan, payment and suspension.
+        if ($reason = app(Entitlements::class)->sendingBlockedReason($campaign->workspace_id)) {
+            $blocked = true;
+            $add(self::BLOCKER, $reason);
+        }
 
         // Campaign schedule.
         $schedule = $this->describeWindow($campaign->send_days, $campaign->send_window_start, $campaign->send_window_end, $campaign->timezone);

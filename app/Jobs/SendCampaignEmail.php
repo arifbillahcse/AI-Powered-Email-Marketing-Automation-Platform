@@ -12,6 +12,7 @@ use App\Models\CampaignLead;
 use App\Models\CampaignStep;
 use App\Models\EmailAccount;
 use App\Models\EmailMessage;
+use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\CampaignMessageBuilder;
 use App\Services\Leads\SuppressionList;
 use App\Services\Mail\MailboxConnectionException;
@@ -78,6 +79,13 @@ class SendCampaignEmail implements ShouldQueue
         $lead = $campaignLead->lead;
 
         if ($campaign->status !== CampaignStatus::Active || ! $mailbox->isActive()) {
+            $this->release($campaignLead);
+
+            return;
+        }
+
+        // Suspended, or no paid plan / monthly limit used up: try again later.
+        if (app(Entitlements::class)->sendingBlockedReason($campaign->workspace) !== null) {
             $this->release($campaignLead);
 
             return;

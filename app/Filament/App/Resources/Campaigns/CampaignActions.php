@@ -10,6 +10,7 @@ use App\Models\AiPromptTemplate;
 use App\Models\Campaign;
 use App\Models\Lead;
 use App\Services\Ai\AiGenerationService;
+use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\CampaignAudience;
 use App\Services\Campaigns\CampaignCloner;
 use App\Services\Campaigns\CampaignLauncher;
@@ -183,8 +184,12 @@ class CampaignActions
             ->color('gray')
             ->authorize('update')
             ->visible(fn (Campaign $record): bool => ! $record->is_template && $record->status !== CampaignStatus::Completed)
-            ->disabled(fn (): bool => modules()->disabled('ai'))
-            ->tooltip(fn (): ?string => modules()->disabled('ai') ? 'The AI module isn\'t enabled on this server.' : null)
+            ->disabled(fn (Campaign $record): bool => ! app(Entitlements::class)->allowsModule($record->workspace_id, 'ai'))
+            ->tooltip(fn (Campaign $record): ?string => match (true) {
+                modules()->disabled('ai') => 'The AI module isn\'t enabled on this server.',
+                ! app(Entitlements::class)->allowsModule($record->workspace_id, 'ai') => 'AI personalization isn\'t included in your plan. Upgrade on the Billing page.',
+                default => null,
+            })
             ->modalHeading('AI personalize')
             ->modalDescription(fn (Campaign $record): string => 'Writes content for each of the '.Number::format(app(CampaignAudience::class)->count($record))
                 .' leads in this campaign\'s audience. Review and approve it in AI review, then use the variable in your email, e.g. {{ai_first_line}}.')

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 // Horizon metrics for the queue dashboard (Redis setups only).
@@ -36,3 +37,11 @@ Schedule::command('domains:check')->dailyAt('03:00');
 
 // Blacklist (DNSBL) monitoring for sending domains and their mail servers.
 Schedule::command('domains:blacklists')->dailyAt('04:00');
+
+// SaaS billing: trials, renewal invoices, overdue and expired subscriptions.
+Schedule::command('billing:run')->hourly()->when(fn (): bool => (bool) config('billing.enabled'));
+
+// Heartbeat for Super admin → System health ("is the cron running?").
+Schedule::call(fn () => Cache::put('system:scheduler_heartbeat', now()->toIso8601String(), now()->addDay()))
+    ->everyMinute()
+    ->name('scheduler-heartbeat');

@@ -10,11 +10,12 @@ use Filament\Notifications\Notification;
 
 /**
  * Database notifications for things the workspace's owners and admins must
- * act on (auto-paused sending, blacklist listings). Works from queued jobs.
+ * act on (auto-paused sending, blacklist listings, billing). Works from
+ * queued jobs.
  */
 class WorkspaceAlerts
 {
-    public function send(int $workspaceId, string $title, string $body, ?string $url = null, ?string $linkLabel = null): void
+    public function send(int $workspaceId, string $title, string $body, ?string $url = null, ?string $linkLabel = null, string $status = 'danger'): void
     {
         $userIds = Membership::query()
             ->where('workspace_id', $workspaceId)
@@ -24,7 +25,7 @@ class WorkspaceAlerts
         $notification = Notification::make()
             ->title($title)
             ->body($body)
-            ->danger();
+            ->status($status);
 
         if ($url) {
             $notification->actions([Action::make('open')->label($linkLabel ?? 'Open')->url($url)]);

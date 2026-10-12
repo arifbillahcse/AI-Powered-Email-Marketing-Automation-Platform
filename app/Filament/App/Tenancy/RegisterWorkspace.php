@@ -4,6 +4,7 @@ namespace App\Filament\App\Tenancy;
 
 use App\Enums\WorkspaceRole;
 use App\Models\Workspace;
+use App\Services\Billing\SubscriptionManager;
 use App\Support\Timezones;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -47,6 +48,9 @@ class RegisterWorkspace extends RegisterTenant
         $workspace = Workspace::create($data);
 
         $workspace->addMember(Auth::user(), WorkspaceRole::Owner);
+
+        // SaaS mode: start the free trial on the default plan.
+        app(SubscriptionManager::class)->startTrial($workspace);
 
         return $workspace;
     }

@@ -159,9 +159,30 @@ Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 **Done when:** a bad list or a blacklisting stops sending by itself, and
 every lead's data can be exported or erased on request.
 
-### ⬜ Phase 10: Billing and super admin
-Plans mapped to modules, Stripe/Paddle + bKash/SSLCommerz adapter, trials,
-invoices, super admin (users, workspaces, impersonation, abuse flags, system health).
+### ✅ Phase 10: Billing and super admin
+- SaaS billing behind `BILLING_ENABLED` (off = self-hosted, unlimited)
+- Plans (super admin): monthly/yearly prices, trial days, limits (mailboxes,
+  leads, emails per month, team members) and included modules
+- Subscriptions: free trial on the default plan for new workspaces; every
+  period is an invoice; renewal invoices 3 days before the period ends,
+  then overdue (7-day grace), then expired (sending stops); cancel at
+  period end; plan changes start when their invoice is paid
+- Payment gateways behind one adapter: Stripe Checkout (signed webhooks),
+  SSLCommerz (validated with the Order Validation API, IPN), bKash Tokenized
+  Checkout (executed server-side), and manual bank transfer (confirmed by a
+  super admin). USD prices are converted to BDT for local gateways
+- Limits enforced on mailbox creation, lead creation and imports, team
+  invitations, the AI module, and sending (monthly email budget per
+  workspace); printable invoices; Billing page; trial/overdue/expired banner
+- Super admin: Plans, Workspaces (plan, usage, 7-day bounce/complaint
+  rates, abuse-risk filter, set plan, suspend), Users (log in as, suspend),
+  Invoices (confirm bank transfers, void), System health (database, cron
+  heartbeat, queue backlog, failed jobs, cache, disk, debug mode, mailbox
+  errors, blacklists, billing), dashboard (MRR, revenue, trials, abuse watch)
+- Suspended workspaces never send (campaigns, replies, one-off emails)
+
+**Done when:** a customer can sign up, trial, pay with a card or bKash, and
+be limited by their plan; the operator can run the platform from /admin.
 
 ### ⬜ Phase 11: Pro mailbox and lead features
 Google + Microsoft 365 OAuth mailboxes, bulk mailbox import, email verification

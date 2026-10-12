@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Notifications\WorkspaceInvitationNotification;
+use App\Services\Billing\Entitlements;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
@@ -29,6 +30,13 @@ class TeamManager
 
         if ($workspace->members()->whereRaw('lower(email) = ?', [$email])->exists()) {
             throw new TeamActionException("{$email} is already a member of this workspace.");
+        }
+
+        // A re-invite replaces the old invitation, so it doesn't count twice.
+        $reinvite = $workspace->invitations()->where('email', $email)->whereNull('accepted_at')->where('expires_at', '>', now())->exists();
+
+        if (! $reinvite && ($reason = app(Entitlements::class)->denies($workspace, 'team_members'))) {
+            throw new TeamActionException($reason);
         }
 
         return DB::transaction(function () use ($workspace, $actor, $email, $role): WorkspaceInvitation {

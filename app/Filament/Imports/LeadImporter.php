@@ -7,6 +7,7 @@ use App\Models\Lead;
 use App\Models\LeadList;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\Billing\Entitlements;
 use App\Support\CustomFieldKey;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
@@ -116,6 +117,10 @@ class LeadImporter extends Importer
 
         if ($lead) {
             return $lead;
+        }
+
+        if ($reason = app(Entitlements::class)->denies($workspaceId, 'leads')) {
+            throw new RowImportFailedException($reason);
         }
 
         $lead = new Lead;

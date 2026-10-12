@@ -10,6 +10,7 @@ use App\Models\InboxMessage;
 use App\Models\InboxThread;
 use App\Models\Lead;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\Campaigns\CampaignMessageBuilder;
 use App\Services\Campaigns\TemplateRenderer;
 use App\Services\Leads\SuppressionList;
@@ -64,6 +65,10 @@ class InboxReplier
     {
         if ($mailbox->workspace_id !== $lead->workspace_id) {
             throw new InvalidArgumentException('Choose a mailbox from this workspace.');
+        }
+
+        if (Workspace::query()->whereKey($lead->workspace_id)->whereNotNull('suspended_at')->exists()) {
+            throw new InvalidArgumentException('This workspace is suspended. Contact support.');
         }
 
         if ($mailbox->status !== EmailAccountStatus::Active) {

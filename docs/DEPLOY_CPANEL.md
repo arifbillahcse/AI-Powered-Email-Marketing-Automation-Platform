@@ -238,6 +238,15 @@ the server's DNS resolver: if your host forwards DNS to Google or
 Cloudflare, Spamhaus refuses the queries and the domain page shows
 "couldn't check" for those lists (never a false "listed").
 
+## Billing (selling the platform)
+
+Set `BILLING_ENABLED=true` to sell workspaces on plans (see the README). The
+same cron runs `billing:run` hourly (trials, renewal invoices, overdue and
+expired subscriptions). Your host must allow outbound HTTPS to the gateways
+you enable (`api.stripe.com`, `securepay.sslcommerz.com`,
+`tokenized.pay.bka.sh`). For bKash and SSLCommerz, use the sandbox
+credentials first (`BKASH_SANDBOX=true`, `SSLCOMMERZ_SANDBOX=true`).
+
 ## Large CSV imports
 
 Imports run in the background via the cron job, 100 rows per job. A 50,000-row

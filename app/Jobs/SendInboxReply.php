@@ -10,6 +10,7 @@ use App\Models\InboxMessage;
 use App\Models\InboxThread;
 use App\Models\Lead;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\Campaigns\CampaignMessageBuilder;
 use App\Services\Leads\SuppressionList;
 use App\Services\Mail\MailboxConnectionException;
@@ -62,6 +63,12 @@ class SendInboxReply implements ShouldQueue
 
         if (! $mailbox) {
             $this->markFailed($message, 'The mailbox this conversation used has been removed.');
+
+            return;
+        }
+
+        if (Workspace::query()->whereKey($lead->workspace_id)->whereNotNull('suspended_at')->exists()) {
+            $this->markFailed($message, 'This workspace is suspended. Contact support.');
 
             return;
         }

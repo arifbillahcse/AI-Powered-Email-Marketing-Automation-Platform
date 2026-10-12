@@ -152,6 +152,34 @@ match the event log exactly. **Export CSV** downloads any breakdown.
   personal data" (owners/admins), which deletes everything and keeps only
   the address on the suppression list.
 
+## Billing (SaaS mode)
+
+Off by default: a self-hosted or custom-built install has no plans or limits.
+To sell workspaces on plans:
+
+1. Set `BILLING_ENABLED=true` and configure at least one payment method in
+   `.env`: Stripe (`STRIPE_*`), SSLCommerz (`SSLCOMMERZ_*`), bKash
+   (`BKASH_*`) or bank transfer (`BILLING_MANUAL_*`, on by default).
+2. `php artisan billing:install-plans` creates Starter / Growth / Agency;
+   edit prices, limits and included modules in **/admin → Plans**. The
+   "trial plan" is what new workspaces start a free trial on.
+3. Customers see **Settings → Billing**: plan, usage, plans, invoices, and
+   pay with the methods you enabled. bKash and SSLCommerz charge in BDT
+   (`BILLING_USD_TO_BDT`). Bank transfers are confirmed in **/admin →
+   Invoices**.
+
+Webhooks: Stripe → `https://your-app/billing/webhook/stripe`
+(`checkout.session.completed`), SSLCommerz IPN →
+`https://your-app/billing/webhook/sslcommerz`. Payments are always
+re-verified with the gateway before an invoice is marked paid.
+
+## Super admin
+
+`/admin` (create the account with `php artisan app:create-super-admin`):
+plans, workspaces (plan, usage, abuse risk, suspend), users (log in as,
+suspend), invoices, and **System health** (cron, queue, cache, disk,
+mailboxes, blacklists, billing).
+
 ## Leads
 
 Outreach → **Leads** imports CSV or Excel (.xlsx) files in the background (100-row chunks, so it

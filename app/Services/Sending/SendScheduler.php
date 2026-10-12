@@ -11,6 +11,7 @@ use App\Models\Campaign;
 use App\Models\CampaignLead;
 use App\Models\EmailAccount;
 use App\Models\EmailMessage;
+use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\CampaignLauncher;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,12 +24,15 @@ use Illuminate\Support\Facades\DB;
  *
  * Limits honoured: campaign and mailbox send windows (days + hours in their
  * time zones), campaign and mailbox daily limits, the mailbox's random gap
- * between emails, sticky mailbox per lead, and the suppression list.
+ * between emails, sticky mailbox per lead, the suppression list, and the
+ * workspace's plan (suspended / unpaid workspaces don't send, and the
+ * monthly email limit is a budget shared by all its campaigns).
  */
 class SendScheduler
 {
     public function __construct(
         protected CampaignLauncher $launcher,
+        protected Entitlements $entitlements,
     ) {}
 
     /**
@@ -43,11 +47,24 @@ class SendScheduler
             ->where('is_template', false)
             ->get();
 
+        // Plan and suspension: whole workspaces that may not send, and how
+        // many emails the others have left this month (null = unlimited).
+        $monthly = [];
+
+        foreach ($campaigns->pluck('workspace_id')->unique() as $workspaceId) {
+            $monthly[$workspaceId] = $this->entitlements->sendingBlockedReason($workspaceId) === null
+                ? $this->entitlements->remaining($workspaceId, 'emails_per_month')
+                : 0;
+        }
+
+        $campaigns = $campaigns->filter(fn (Campaign $campaign): bool => $monthly[$campaign->workspace_id] !== 0)->values();
+
         $this->stopSuppressedLeads($campaigns);
         $campaigns = $this->completeFinished($campaigns);
 
         // Campaigns inside their window, with how many more they may send today.
         $remaining = [];
+        $workspaceOf = [];
 
         foreach ($campaigns as $campaign) {
             if (! SendWindow::isOpen($now, $campaign->timezone, $campaign->send_days, $campaign->send_window_start, $campaign->send_window_end)) {
@@ -61,6 +78,7 @@ class SendScheduler
 
             if ($sentToday < $campaign->daily_limit) {
                 $remaining[$campaign->getKey()] = $campaign->daily_limit - $sentToday;
+                $workspaceOf[$campaign->getKey()] = $campaign->workspace_id;
             }
         }
 
@@ -87,7 +105,7 @@ class SendScheduler
         foreach ($mailboxes as $mailbox) {
             $campaignIds = array_values(array_filter(
                 $pools[$mailbox->getKey()] ?? [],
-                fn (int $id): bool => ($remaining[$id] ?? 0) > 0,
+                fn (int $id): bool => ($remaining[$id] ?? 0) > 0 && ($monthly[$workspaceOf[$id]] ?? null) !== 0,
             ));
 
             if ($campaignIds === [] || ! $this->mailboxCanSend($mailbox, $now)) {
@@ -107,6 +125,12 @@ class SendScheduler
             SendCampaignEmail::dispatch($campaignLead->getKey(), $mailbox->getKey(), $campaignLead->steps_sent + 1);
 
             $remaining[$campaignLead->campaign_id]--;
+            $workspaceId = $workspaceOf[$campaignLead->campaign_id];
+
+            if ($monthly[$workspaceId] !== null) {
+                $monthly[$workspaceId]--;
+            }
+
             $queued++;
         }
 

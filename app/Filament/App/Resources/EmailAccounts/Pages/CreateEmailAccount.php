@@ -5,6 +5,9 @@ namespace App\Filament\App\Resources\EmailAccounts\Pages;
 use App\Filament\App\Resources\EmailAccounts\EmailAccountActions;
 use App\Filament\App\Resources\EmailAccounts\EmailAccountResource;
 use App\Models\EmailAccount;
+use App\Services\Billing\Entitlements;
+use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateEmailAccount extends CreateRecord
@@ -17,6 +20,14 @@ class CreateEmailAccount extends CreateRecord
     {
         // The connection test below reports the outcome instead.
         return null;
+    }
+
+    protected function beforeCreate(): void
+    {
+        if ($reason = app(Entitlements::class)->denies(Filament::getTenant(), 'mailboxes')) {
+            Notification::make()->title('Mailbox limit reached')->body($reason)->danger()->send();
+            $this->halt();
+        }
     }
 
     protected function afterCreate(): void

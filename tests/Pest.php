@@ -1,17 +1,22 @@
 <?php
 
+use App\Enums\BillingInterval;
+use App\Enums\SubscriptionStatus;
 use App\Enums\WorkspaceRole;
 use App\Models\AiSetting;
 use App\Models\Campaign;
 use App\Models\EmailAccount;
 use App\Models\Lead;
 use App\Models\LeadList;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Ai\TextGenerator;
 use App\Services\Ai\TextGeneratorFactory;
 use App\Services\Campaigns\CampaignLauncher;
 use App\Services\Mail\MailboxTransportFactory;
+use Carbon\CarbonInterface;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
@@ -157,4 +162,32 @@ function rawEmail(array $headers = [], string $body = "Sounds interesting, tell 
     }
 
     return implode("\r\n", $lines)."\r\n\r\n".str_replace("\n", "\r\n", $body);
+}
+
+/**
+ * Turn SaaS billing on with a default (trial) plan.
+ */
+function billingOn(array $plan = []): Plan
+{
+    config(['billing.enabled' => true]);
+
+    return Plan::factory()->default()->create(array_merge(['name' => 'Starter', 'slug' => 'starter'], $plan));
+}
+
+/**
+ * Put a workspace on a paid, active plan.
+ */
+function subscribe(Workspace $workspace, Plan $plan, ?CarbonInterface $until = null): Subscription
+{
+    $subscription = new Subscription;
+    $subscription->forceFill([
+        'workspace_id' => $workspace->id,
+        'plan_id' => $plan->id,
+        'status' => SubscriptionStatus::Active,
+        'interval' => BillingInterval::Monthly,
+        'current_period_start' => now(),
+        'current_period_end' => $until ?? now()->addMonth(),
+    ])->save();
+
+    return $subscription;
 }

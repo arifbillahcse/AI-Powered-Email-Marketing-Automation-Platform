@@ -15,6 +15,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -45,6 +46,8 @@ class AppPanelProvider extends PanelProvider
             ->tenant(Workspace::class, slugAttribute: 'slug')
             ->tenantRegistration(RegisterWorkspace::class)
             ->tenantProfile(WorkspaceSettings::class)
+            // Suspension, trial and billing notices, and the impersonation bar.
+            ->renderHook(PanelsRenderHook::PAGE_START, fn (): string => view('filament.app.account-banner')->render())
             ->databaseNotifications()
             ->brandName(fn (): string => config('app.name'))
             ->colors([

@@ -53,6 +53,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
         'email_verified_at' => null,
         'app_authentication_secret' => null,
         'app_authentication_recovery_codes' => null,
+        'suspended_at' => null,
     ];
 
     /**
@@ -76,11 +77,17 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'suspended_at' => 'datetime',
         ];
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
+        // Suspended accounts can't use either panel (super admins can't be suspended).
+        if ($this->suspended_at !== null && ! $this->is_super_admin) {
+            return false;
+        }
+
         return match ($panel->getId()) {
             'admin' => $this->is_super_admin,
             'app' => true,
