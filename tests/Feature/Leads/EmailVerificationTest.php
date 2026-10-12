@@ -4,12 +4,16 @@ use App\Enums\CampaignLeadStatus;
 use App\Enums\EmailVerificationStatus;
 use App\Filament\App\Resources\Leads\Pages\ListLeads;
 use App\Jobs\SendCampaignEmail;
+use App\Jobs\VerifyLeadEmails;
 use App\Models\CampaignLead;
 use App\Models\Lead;
 use App\Services\Campaigns\CampaignAudience;
 use App\Services\Dns\DnsResolver;
+use App\Services\Leads\EmailVerification;
 use App\Services\Leads\EmailVerifier;
 use Filament\Actions\Testing\TestAction;
+use Illuminate\Bus\PendingBatch;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\Fakes\FakeDnsResolver;
@@ -49,29 +53,44 @@ it('asks a verification service when one is configured', function () {
         ->and($verifier->verify('c@acme.test')['status'])->toBe(EmailVerificationStatus::Invalid);
 });
 
-it('verifies a selection in the background and reports the results', function () {
+it('queues verification for a selection', function () {
+    Bus::fake();
+    $workspace = actingInWorkspace();
+    $leads = Lead::factory()->for($workspace)->count(3)->create();
+
+    Livewire::test(ListLeads::class)
+        ->selectTableRecords($leads->take(2))
+        ->callAction(TestAction::make('verifyEmails')->table()->bulk())
+        ->assertNotified('Verifying 2 leads');
+
+    Bus::assertBatched(fn (PendingBatch $batch): bool => $batch->jobs->count() === 1
+        && $batch->jobs->first()->leadIds === $leads->take(2)->pluck('id')->all());
+});
+
+it('verifies every unchecked lead from the header action', function () {
+    Bus::fake();
+    $workspace = actingInWorkspace();
+    Lead::factory()->for($workspace)->count(3)->create();
+    Lead::factory()->for($workspace)->create(['verification_status' => EmailVerificationStatus::Valid]);
+
+    Livewire::test(ListLeads::class)->callAction('verifyUnchecked')->assertNotified('Verifying 3 leads');
+
+    Bus::assertBatchCount(1);
+});
+
+it('checks each lead in the job and reports the results', function () {
     $workspace = actingInWorkspace();
     $good = Lead::factory()->for($workspace)->create(['email' => 'jane@acme.test']);
     $bad = Lead::factory()->for($workspace)->create(['email' => 'joe@nowhere.test']);
+    $since = now()->subSecond()->toDateTimeString();
 
-    Livewire::test(ListLeads::class)
-        ->selectTableRecords([$good, $bad])
-        ->callAction(TestAction::make('verifyEmails')->table()->bulk())
-        ->assertNotified('Verifying 2 leads');
+    (new VerifyLeadEmails($workspace->id, [$good->id, $bad->id]))->handle(app(EmailVerifier::class));
+    app(EmailVerification::class)->notify(auth()->user(), $workspace->id, $since);
 
     expect($good->refresh()->verification_status)->toBe(EmailVerificationStatus::Valid)
         ->and($bad->refresh()->verification_status)->toBe(EmailVerificationStatus::Invalid)
         ->and($bad->verification_reason)->toBe('nowhere.test has no mail server.')
-        ->and(auth()->user()->notifications()->sole()->data['title'])->toBe('Email verification finished');
-});
-
-it('verifies every unchecked lead from the header action', function () {
-    $workspace = actingInWorkspace();
-    Lead::factory()->for($workspace)->count(3)->create(['email' => fn () => fake()->unique()->userName().'@acme.test']);
-
-    Livewire::test(ListLeads::class)->callAction('verifyUnchecked')->assertNotified('Verifying 3 leads');
-
-    expect(Lead::query()->where('verification_status', 'valid')->count())->toBe(3);
+        ->and(auth()->user()->notifications()->sole()->data['body'])->toStartWith('1 valid, 1 invalid.');
 });
 
 it('is locked when the plan does not include it', function () {
