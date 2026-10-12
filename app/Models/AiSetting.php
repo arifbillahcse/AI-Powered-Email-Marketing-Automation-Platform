@@ -15,6 +15,11 @@ class AiSetting extends Model
         'provider',
         'api_key',
         'model',
+        'classify_replies',
+        'auto_label_replies',
+        'auto_draft_replies',
+        'company_context',
+        'meeting_link',
     ];
 
     /**
@@ -31,6 +36,11 @@ class AiSetting extends Model
         'provider' => 'platform',
         'api_key' => null,
         'model' => null,
+        'classify_replies' => true,
+        'auto_label_replies' => true,
+        'auto_draft_replies' => true,
+        'company_context' => null,
+        'meeting_link' => null,
     ];
 
     protected function casts(): array
@@ -38,6 +48,9 @@ class AiSetting extends Model
         return [
             'provider' => AiProvider::class,
             'api_key' => 'encrypted',
+            'classify_replies' => 'boolean',
+            'auto_label_replies' => 'boolean',
+            'auto_draft_replies' => 'boolean',
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\InboxThreads;
 
 use App\Enums\LeadStatus;
+use App\Enums\ReplyCategory;
 use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Filament\App\Resources\InboxThreads\Pages\ListInboxThreads;
 use App\Filament\App\Resources\InboxThreads\Pages\ViewInboxThread;
@@ -83,6 +84,10 @@ class InboxThreadResource extends Resource
                     ->placeholder('(no subject)')
                     ->wrap()
                     ->searchable(['subject', 'snippet']),
+                TextColumn::make('ai_category')
+                    ->label('AI')
+                    ->badge()
+                    ->placeholder('—'),
                 TextColumn::make('auto_reply')
                     ->label('')
                     ->badge()
@@ -105,6 +110,9 @@ class InboxThreadResource extends Resource
             ])
             ->defaultSort('last_message_at', 'desc')
             ->filters([
+                SelectFilter::make('ai_category')
+                    ->label('AI category')
+                    ->options(ReplyCategory::class),
                 TernaryFilter::make('unread')
                     ->label('Read status')
                     ->trueLabel('Unread')

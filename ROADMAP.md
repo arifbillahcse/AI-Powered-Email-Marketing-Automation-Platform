@@ -205,8 +205,28 @@ be limited by their plan; the operator can run the platform from /admin.
 **Done when:** mailboxes connect in one click or in bulk, bad addresses are
 filtered before sending, and sequences improve themselves with A/B tests.
 
-### ⬜ Phase 12: AI reply intelligence
-Reply classification, auto-labels, AI reply drafts, website enrichment, campaign copilot.
+### ✅ Phase 12: AI reply intelligence
+- Reply classification (`ai` queue, per reply): interested, wants a meeting,
+  question, not now, not interested, wrong person, unsubscribe request,
+  other, with a one-line summary; shown in the Unibox (badge, filter,
+  conversation header)
+- Auto-labels: Interested / Not interested set from the reply (never over a
+  label set by hand); "please remove me" replies unsubscribe the lead
+- AI reply drafts for replies worth answering, using "About your company"
+  and the booking link from AI settings; Reply opens with the draft filled
+  in (never sent without review); "Write AI draft" on demand
+- Website enrichment (bulk action): reads the lead's website or business
+  email domain (SSRF-safe: every hop through HostGuard, no redirects to
+  private addresses) and adds {{company_summary}}, {{industry}},
+  {{personalization_hook}}
+- Campaign copilot: "Write with AI" turns a short brief into a full
+  sequence (subject, same-thread follow-ups, variables with fallbacks)
+- All AI input from leads, replies and websites is treated as untrusted
+  data in tagged blocks; usage is recorded per purpose; plan and credit
+  limits apply
+
+**Done when:** replies sort and label themselves, answers are a click away,
+and a new campaign can be written from a two-line brief.
 
 ### ⬜ Phase 13: Integrations and API
 REST API (Sanctum), webhooks, Zapier/Make, Slack/Telegram, HubSpot/Pipedrive, Google Sheets.

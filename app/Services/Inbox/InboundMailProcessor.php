@@ -5,12 +5,15 @@ namespace App\Services\Inbox;
 use App\Enums\EmailMessageStatus;
 use App\Enums\InboxMessageStatus;
 use App\Enums\LeadActivityType;
+use App\Jobs\ProcessInboundReply;
+use App\Models\AiSetting;
 use App\Models\CampaignLead;
 use App\Models\EmailAccount;
 use App\Models\EmailMessage;
 use App\Models\InboxMessage;
 use App\Models\InboxThread;
 use App\Models\Lead;
+use App\Services\Ai\AiRunner;
 use App\Services\Sending\BounceClassifier;
 use App\Services\Sending\EngagementRecorder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -86,6 +89,11 @@ class InboundMailProcessor
             $this->engagement->reply($campaignLead, $sent, $email->subject);
         } elseif ($lead = Lead::query()->find($leadId)) {
             $this->engagement->leadReplied($lead, $email->subject);
+        }
+
+        // Reply intelligence: category, auto-label and a suggested answer.
+        if (! $autoReply && AiSetting::for($mailbox->workspace_id)->classify_replies && app(AiRunner::class)->available($mailbox->workspace_id)) {
+            ProcessInboundReply::dispatch($message->getKey());
         }
 
         return $message;

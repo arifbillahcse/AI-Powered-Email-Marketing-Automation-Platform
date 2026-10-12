@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ReplyCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,6 +28,7 @@ class InboxThread extends Model
         'message_count' => 0,
         'last_message_at' => null,
         'last_inbound_at' => null,
+        'ai_category' => null,
     ];
 
     protected function casts(): array
@@ -37,6 +39,7 @@ class InboxThread extends Model
             'message_count' => 'integer',
             'last_message_at' => 'datetime',
             'last_inbound_at' => 'datetime',
+            'ai_category' => ReplyCategory::class,
         ];
     }
 

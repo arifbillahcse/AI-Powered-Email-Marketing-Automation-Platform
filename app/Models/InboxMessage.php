@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InboxMessageStatus;
+use App\Enums\ReplyCategory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -33,6 +34,10 @@ class InboxMessage extends Model
         'error' => null,
         'imap_uid' => null,
         'sent_at' => null,
+        'ai_category' => null,
+        'ai_summary' => null,
+        'ai_draft' => null,
+        'ai_processed_at' => null,
     ];
 
     protected function casts(): array
@@ -42,6 +47,8 @@ class InboxMessage extends Model
             'auto_reply' => 'boolean',
             'imap_uid' => 'integer',
             'sent_at' => 'datetime',
+            'ai_category' => ReplyCategory::class,
+            'ai_processed_at' => 'datetime',
         ];
     }
 

@@ -14,7 +14,9 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -94,6 +96,11 @@ class AiSettings extends Page
             'provider' => $setting->provider->value,
             'api_key' => null,
             'model' => $setting->model ?? ($setting->provider === AiProvider::OpenAi ? null : 'claude-opus-5-5'),
+            'classify_replies' => $setting->classify_replies,
+            'auto_label_replies' => $setting->auto_label_replies,
+            'auto_draft_replies' => $setting->auto_draft_replies,
+            'company_context' => $setting->company_context,
+            'meeting_link' => $setting->meeting_link,
         ]);
     }
 
@@ -141,6 +148,32 @@ class AiSettings extends Page
                                 ->rule('regex:/^[A-Za-z0-9._:-]+$/')
                                 ->visible(fn (Get $get): bool => AiProvider::fromState($get('provider')) === AiProvider::OpenAi),
                         ]),
+                    Section::make('Reply intelligence')
+                        ->description('What the AI does with replies in the Unibox.')
+                        ->schema([
+                            Toggle::make('classify_replies')
+                                ->label('Sort replies (interested, wants a meeting, question, not now, not interested, unsubscribe…)')
+                                ->live(),
+                            Toggle::make('auto_label_replies')
+                                ->label('Label leads from their replies, and unsubscribe leads who ask to stop')
+                                ->helperText('Never changes a label you set by hand.')
+                                ->visible(fn (Get $get): bool => (bool) $get('classify_replies')),
+                            Toggle::make('auto_draft_replies')
+                                ->label('Draft an answer to replies worth answering')
+                                ->helperText('Drafts are never sent on their own: you review them in Reply.')
+                                ->visible(fn (Get $get): bool => (bool) $get('classify_replies')),
+                            Textarea::make('company_context')
+                                ->label('About your company')
+                                ->helperText('What you sell, to whom, prices or FAQs. Used for reply drafts and the campaign copilot.')
+                                ->rows(5)
+                                ->maxLength(4000),
+                            TextInput::make('meeting_link')
+                                ->label('Booking link')
+                                ->placeholder('https://cal.com/you/30min')
+                                ->helperText('Shared in drafts when a lead wants to talk.')
+                                ->url()
+                                ->maxLength(255),
+                        ]),
                 ])
                     ->livewireSubmitHandler('save')
                     ->footer([
@@ -187,6 +220,13 @@ class AiSettings extends Page
             $setting->api_key = null;
         }
 
+        $setting->fill([
+            'classify_replies' => (bool) ($data['classify_replies'] ?? true),
+            'auto_label_replies' => (bool) ($data['auto_label_replies'] ?? true),
+            'auto_draft_replies' => (bool) ($data['auto_draft_replies'] ?? true),
+            'company_context' => filled($data['company_context'] ?? null) ? trim($data['company_context']) : null,
+            'meeting_link' => filled($data['meeting_link'] ?? null) ? trim($data['meeting_link']) : null,
+        ]);
         $setting->provider = $provider;
         $setting->model = $provider === AiProvider::Platform ? null : ($data['model'] ?? null);
 

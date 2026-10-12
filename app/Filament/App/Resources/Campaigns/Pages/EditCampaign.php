@@ -64,6 +64,7 @@ class EditCampaign extends EditRecord
             CampaignActions::resume(),
             CampaignActions::aiPersonalize(),
             CampaignActions::abResults(),
+            CampaignActions::copilot(),
             ActionGroup::make([
                 CampaignActions::addNewLeads(),
                 CampaignActions::duplicate(),

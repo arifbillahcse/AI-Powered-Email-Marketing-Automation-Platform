@@ -152,6 +152,20 @@ match the event log exactly. **Export CSV** downloads any breakdown.
   personal data" (owners/admins), which deletes everything and keeps only
   the address on the suppression list.
 
+## AI reply intelligence
+
+With AI set up (AI settings), every new reply is sorted (interested, wants a
+meeting, question, not now, not interested, wrong person, unsubscribe
+request), summarized in one line, and the lead is labelled automatically
+(labels you set by hand are kept). "Remove me" replies unsubscribe the lead.
+Replies worth answering get an AI draft: **Reply** opens with it filled in.
+Add "About your company" and a booking link in AI settings for better drafts.
+
+- Leads → select → **Enrich from website (AI)** adds `{{company_summary}}`,
+  `{{industry}}` and `{{personalization_hook}}` from each lead's website.
+- Campaign → **Write with AI** writes a whole sequence from a short brief
+  (draft campaigns).
+
 ## Mailboxes: OAuth and bulk import
 
 - **Connect Google / Microsoft 365** (Email accounts) signs in with OAuth: no

@@ -5,11 +5,13 @@ namespace App\Filament\App\Resources\InboxThreads\Pages;
 use App\Enums\LeadStatus;
 use App\Filament\App\Resources\InboxThreads\InboxThreadResource;
 use App\Filament\App\Resources\Leads\LeadResource;
+use App\Jobs\DraftInboxReply;
 use App\Models\EmailAccount;
 use App\Models\EmailMessage;
 use App\Models\InboxMessage;
 use App\Models\InboxThread;
 use App\Models\Lead;
+use App\Services\Ai\AiRunner;
 use App\Services\Inbox\InboxReplier;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
@@ -51,10 +53,13 @@ class ViewInboxThread extends ViewRecord
     {
         $lead = $this->lead();
 
+        $latest = $this->latestReply();
+
         return collect([
             trim($lead->fullName().' <'.$lead->email.'>'),
             $lead->company,
             'Label: '.$lead->status->getLabel(),
+            $latest?->ai_category ? 'AI: '.$latest->ai_category->getLabel().($latest->ai_summary ? " ({$latest->ai_summary})" : '') : null,
         ])->filter()->implode(' · ');
     }
 
@@ -92,12 +97,12 @@ class ViewInboxThread extends ViewRecord
                 'body' => $message->body,
                 'badge' => match (true) {
                     $message->auto_reply => 'Out of office',
-                    $message->isInbound() => 'Reply',
+                    $message->isInbound() => 'Reply'.($message->ai_category ? ' · '.$message->ai_category->getLabel() : ''),
                     default => 'You: '.$message->status->getLabel(),
                 },
                 'badge_color' => match (true) {
                     $message->auto_reply => 'warning',
-                    $message->isInbound() => 'success',
+                    $message->isInbound() => $message->ai_category?->getColor() ?? 'success',
                     default => $message->status->getColor(),
                 },
                 'error' => $message->error,
@@ -116,6 +121,8 @@ class ViewInboxThread extends ViewRecord
                 ->modalHeading(fn (): string => 'Reply to '.$this->lead()->email)
                 ->modalDescription(fn (): string => 'Sent from '.($this->mailboxEmail() ?? 'the original mailbox').' in the same thread, with your signature.')
                 ->modalSubmitActionLabel('Send reply')
+                // A suggested answer from the AI, to edit before sending.
+                ->fillForm(fn (): array => ['body' => $this->latestReply()?->ai_draft])
                 ->schema([
                     Textarea::make('body')
                         ->label('Your reply')
@@ -129,6 +136,21 @@ class ViewInboxThread extends ViewRecord
                     Notification::make()
                         ->title('Reply queued')
                         ->body('It goes out within a minute. If it fails, you\'ll get a notification.')
+                        ->success()
+                        ->send();
+                }),
+            Action::make('aiDraft')
+                ->label(fn (): string => $this->latestReply()?->ai_draft ? 'New AI draft' : 'Write AI draft')
+                ->icon(Heroicon::OutlinedSparkles)
+                ->color('gray')
+                ->authorize('update')
+                ->visible(fn (): bool => $this->latestReply() !== null && app(AiRunner::class)->available($this->record->workspace_id))
+                ->action(function (): void {
+                    DraftInboxReply::dispatch($this->record->getKey(), Auth::id());
+
+                    Notification::make()
+                        ->title('Writing a draft')
+                        ->body('You\'ll get a notification when it\'s ready; Reply will be filled in with it.')
                         ->success()
                         ->send();
                 }),
@@ -164,6 +186,15 @@ class ViewInboxThread extends ViewRecord
                 ->color('gray')
                 ->url(fn (): string => LeadResource::getUrl('view', ['record' => $this->record->lead_id])),
         ];
+    }
+
+    protected function latestReply(): ?InboxMessage
+    {
+        return InboxMessage::query()
+            ->where('inbox_thread_id', $this->record->getKey())
+            ->where('direction', InboxMessage::INBOUND)
+            ->latest('id')
+            ->first();
     }
 
     protected function lead(): Lead

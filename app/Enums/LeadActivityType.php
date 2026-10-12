@@ -31,6 +31,7 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
     case AutoReplied = 'auto_replied';
     case ReplySent = 'reply_sent';
     case Complained = 'complained';
+    case Enriched = 'enriched';
 
     public function getLabel(): string
     {
@@ -54,6 +55,7 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::AutoReplied => 'Auto-reply',
             self::ReplySent => 'Reply sent',
             self::Complained => 'Spam complaint',
+            self::Enriched => 'Enriched',
         };
     }
 
@@ -88,6 +90,7 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::Bounced => Heroicon::OutlinedExclamationTriangle,
             self::Unsubscribed => Heroicon::OutlinedNoSymbol,
             self::Complained => Heroicon::OutlinedShieldExclamation,
+            self::Enriched => Heroicon::OutlinedSparkles,
             self::Replied, self::AutoReplied => Heroicon::OutlinedChatBubbleLeftRight,
             self::ReplySent => Heroicon::OutlinedArrowUturnLeft,
         };

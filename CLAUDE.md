@@ -98,6 +98,11 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   excludes invalid addresses (and non-valid with `verified_only`)
 - A/B: `Services/Campaigns/AbTesting` (step = version A, `CampaignStepVariant` = B..E,
   `email_messages.variant`, `campaign_steps.ab_winner`; `campaigns:ab-test`)
+- AI beyond personalization: `Services/Ai/AiRunner` (module/plan/credit checks,
+  usage with `purpose`, `json()`, `untrusted()`), `ReplyIntelligence`
+  (`ProcessInboundReply` job from InboundMailProcessor; `DraftInboxReply`),
+  `WebsiteEnricher` + `LeadEnrichment` (`EnrichLeads` batch; HostGuard on every
+  hop), `CampaignCopilot` (`WriteCampaignSequence`); `ReplyCategory` enum
 - `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
   `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
   monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),

@@ -6,11 +6,13 @@ use App\Enums\AiContentType;
 use App\Enums\CampaignStatus;
 use App\Filament\App\Resources\AiGenerations\AiGenerationResource;
 use App\Filament\App\Resources\AiPromptTemplates\AiPromptTemplateResource;
+use App\Jobs\WriteCampaignSequence;
 use App\Models\AiPromptTemplate;
 use App\Models\Campaign;
 use App\Models\CampaignStepVariant;
 use App\Models\Lead;
 use App\Services\Ai\AiGenerationService;
+use App\Services\Ai\AiRunner;
 use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\AbTesting;
 use App\Services\Campaigns\CampaignAudience;
@@ -22,9 +24,11 @@ use App\Services\Sending\SendingDiagnostics;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Html;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
@@ -129,6 +133,66 @@ class CampaignActions
                 }
 
                 Notification::make()->title('Campaign launched')->body(Number::format($enrolled).' leads enrolled.')->success()->send();
+            });
+    }
+
+    /**
+     * The AI writes a whole sequence from a short brief (draft campaigns).
+     */
+    public static function copilot(): Action
+    {
+        return Action::make('copilot')
+            ->label('Write with AI')
+            ->icon(Heroicon::OutlinedSparkles)
+            ->color('gray')
+            ->authorize('update')
+            ->visible(fn (Campaign $record): bool => $record->status === CampaignStatus::Draft && ! $record->is_template)
+            ->disabled(fn (Campaign $record): bool => ! app(AiRunner::class)->available($record->workspace_id))
+            ->tooltip(fn (Campaign $record): ?string => app(AiRunner::class)->available($record->workspace_id) ? null : 'Set up AI in AI settings first (or it isn\'t in your plan).')
+            ->modalHeading('Write the sequence with AI')
+            ->modalDescription('Describe your offer; the AI writes the emails and replaces this campaign\'s current sequence. You can edit everything before launching.')
+            ->modalSubmitActionLabel('Write sequence')
+            ->schema([
+                Textarea::make('offer')
+                    ->label('What do you offer?')
+                    ->placeholder('We build WordPress and WooCommerce sites for clinics in Dhaka, delivered in 2 weeks, from $500.')
+                    ->rows(3)
+                    ->required()
+                    ->maxLength(2000),
+                TextInput::make('audience')
+                    ->label('Who is it for?')
+                    ->placeholder('Owners of private clinics and diagnostic centers')
+                    ->maxLength(500),
+                TextInput::make('call_to_action')
+                    ->label('What should they do?')
+                    ->placeholder('Reply to book a 15-minute call')
+                    ->maxLength(300),
+                Grid::make(2)->schema([
+                    Select::make('emails')
+                        ->label('Emails in the sequence')
+                        ->options([1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5'])
+                        ->default(3)
+                        ->required(),
+                    Select::make('tone')
+                        ->options(['friendly' => 'Friendly', 'professional' => 'Professional', 'casual' => 'Casual', 'direct' => 'Direct'])
+                        ->default('friendly')
+                        ->required(),
+                ]),
+            ])
+            ->action(function (Campaign $record, array $data): void {
+                WriteCampaignSequence::dispatch($record->getKey(), [
+                    'offer' => (string) $data['offer'],
+                    'audience' => $data['audience'] ?? null,
+                    'call_to_action' => $data['call_to_action'] ?? null,
+                    'emails' => (int) $data['emails'],
+                    'tone' => (string) ($data['tone'] ?? 'friendly'),
+                ], (int) Auth::id());
+
+                Notification::make()
+                    ->title('Writing your sequence')
+                    ->body('This takes about a minute. You\'ll get a notification; then reload the campaign.')
+                    ->success()
+                    ->send();
             });
     }
 

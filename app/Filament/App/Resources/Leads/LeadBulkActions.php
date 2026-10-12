@@ -6,6 +6,8 @@ use App\Enums\LeadStatus;
 use App\Enums\SuppressionReason;
 use App\Models\Lead;
 use App\Models\LeadList;
+use App\Services\Ai\AiRunner;
+use App\Services\Ai\LeadEnrichment;
 use App\Services\Billing\Entitlements;
 use App\Services\Leads\EmailVerification;
 use App\Services\Leads\LeadBulkOperations;
@@ -39,6 +41,7 @@ class LeadBulkActions
             static::removeTags(),
             static::setStatus(),
             static::verify(),
+            static::enrich(),
             static::suppress(),
             static::delete(),
         ];
@@ -77,6 +80,24 @@ class LeadBulkActions
                 $count = app(EmailVerification::class)->queue(static::workspaceId(), $query, Auth::user());
 
                 static::done('Verifying '.Number::format($count).' '.str('lead')->plural($count));
+            });
+    }
+
+    public static function enrich(): BulkAction
+    {
+        $locked = fn (): bool => ! app(AiRunner::class)->available(static::workspaceId());
+
+        return static::base('enrichFromWebsite')
+            ->label('Enrich from website (AI)')
+            ->icon(Heroicon::OutlinedSparkles)
+            ->disabled($locked)
+            ->tooltip(fn (): ?string => $locked() ? 'Set up AI in AI settings first (or it isn\'t in your plan).' : null)
+            ->requiresConfirmation()
+            ->modalDescription('Reads each lead\'s company website (or their business email\'s domain) and adds {{company_summary}}, {{industry}} and {{personalization_hook}} as custom fields. Uses AI credits; runs in the background.')
+            ->action(function (Builder $query): void {
+                $count = app(LeadEnrichment::class)->queue(static::workspaceId(), $query, Auth::user());
+
+                static::done('Enriching '.Number::format($count).' '.str('lead')->plural($count));
             });
     }
 
