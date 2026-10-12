@@ -13,6 +13,7 @@ use App\Models\EmailMessage;
 use App\Models\InboxMessage;
 use App\Models\InboxThread;
 use App\Models\Lead;
+use App\Models\WarmupMessage;
 use App\Services\Ai\AiRunner;
 use App\Services\Sending\BounceClassifier;
 use App\Services\Sending\EngagementRecorder;
@@ -46,6 +47,13 @@ class InboundMailProcessor
         $email = ParsedEmail::fromRaw($raw);
 
         if ($email->fromEmail === null || $email->fromEmail === strtolower($mailbox->email)) {
+            return null;
+        }
+
+        // Warmup emails between pool mailboxes are handled by the warmup module.
+        $warmupToken = $email->header((string) config('outreach.warmup.header'));
+
+        if ($warmupToken !== null && WarmupMessage::query()->where('token', mb_substr($warmupToken, 0, 40))->exists()) {
             return null;
         }
 

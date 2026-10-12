@@ -109,6 +109,12 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   ReplyIntelligence) → `DeliverIntegrationEvent` job → `Drivers/*` (Webhook signed,
   Slack, Telegram, HubSpot, Pipedrive, GoogleSheets); `Integration.config` is an
   encrypted array; secrets are never filled back into forms
+- Warmup: `Services/Warmup/` `WarmupPlanner` (pool, ramp-up quota, partner, spacing),
+  `WarmupContent`, `WarmupInboxProcessor` (IMAP: spam rescue, \Seen, move to the
+  Warmup folder, queue replies), `WarmupHealth` (7-day inbox rate); `WarmupMessage`
+  (token in `X-Warmup`, one reply per message); jobs `SendWarmupEmail` (sending)
+  and `ProcessWarmupInbox` (imap); `warmup:send` / `warmup:sync`. Reply detection
+  ignores warmup mail
 - `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
   `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
   monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),

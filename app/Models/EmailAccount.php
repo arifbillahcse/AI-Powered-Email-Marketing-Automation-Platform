@@ -83,6 +83,9 @@ class EmailAccount extends Model
         'warmup_daily_target' => 20,
         'warmup_reply_rate' => 30,
         'warmup_started_at' => null,
+        'warmup_next_at' => null,
+        'warmup_checked_at' => null,
+        'warmup_error' => null,
         'next_send_at' => null,
         'imap_uid_validity' => null,
         'imap_last_uid' => null,
@@ -119,6 +122,10 @@ class EmailAccount extends Model
             'last_tested_at' => 'datetime',
             'warmup_enabled' => 'boolean',
             'warmup_started_at' => 'datetime',
+            'warmup_next_at' => 'datetime',
+            'warmup_checked_at' => 'datetime',
+            'warmup_daily_target' => 'integer',
+            'warmup_reply_rate' => 'integer',
             'next_send_at' => 'datetime',
             'safety_reset_at' => 'datetime',
             'oauth_access_token' => 'encrypted',
@@ -141,6 +148,13 @@ class EmailAccount extends Model
 
             if ($account->isDirty('tracking_domain')) {
                 $account->tracking_domain_verified_at = null;
+            }
+
+            // Warmup ramps up from day 1 every time it's switched on.
+            if ($account->isDirty('warmup_enabled')) {
+                $account->warmup_started_at = $account->warmup_enabled ? now() : null;
+                $account->warmup_next_at = null;
+                $account->warmup_error = null;
             }
         });
 

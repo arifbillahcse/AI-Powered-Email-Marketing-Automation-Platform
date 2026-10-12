@@ -100,6 +100,19 @@ sequence as `{{ai_first_line}}`, `{{ai_subject}}` or `{{ai_email}}`. Only
 approved content is ever sent: without a fallback (`{{ai_first_line|Hi}}`) a
 campaign can't launch, and a lead's email waits, until its content is approved.
 
+## Inbox warmup
+
+Infrastructure → **Warmup** (or a mailbox's Warmup tab) switches warmup on
+per mailbox. Warmup mailboxes email each other short, natural conversations:
+2 a day at first, 2 more every day, up to the mailbox's target. The
+recipient's inbox is checked over IMAP: warmup emails are rescued from spam,
+marked read, filed in a "Warmup" folder and answered at the mailbox's reply
+rate. The page shows each mailbox's inbox rate (share of delivered warmup
+emails that landed in the inbox) over the last 7 days. The pool spans all
+workspaces by default; set `WARMUP_POOL=workspace` to keep each customer's
+mailboxes to themselves (then a workspace needs mailboxes on at least two
+domains).
+
 ## Unibox
 
 Outreach → **Unibox** collects replies from every connected mailbox. Every

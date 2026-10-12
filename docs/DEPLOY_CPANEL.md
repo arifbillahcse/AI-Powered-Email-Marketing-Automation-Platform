@@ -229,6 +229,14 @@ The same cron checks every mailbox for replies every 5 minutes over IMAP
 up over a few runs. Your host must allow outbound connections to your IMAP
 servers; if a mailbox can't be read, the error is saved on it.
 
+## Inbox warmup
+
+The same cron sends due warmup emails every 5 minutes (`warmup:send`) and
+checks the inboxes that have warmup emails on the way every 10 minutes
+(`warmup:sync`). Warmup emails are filed in a "Warmup" folder; on cPanel
+mail (Dovecot) that's `INBOX.Warmup`. Warmup needs mailboxes on at least two
+different domains.
+
 ## Deliverability safety
 
 Bounce and spam-complaint rates are checked after every bounce and

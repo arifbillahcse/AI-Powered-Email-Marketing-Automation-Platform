@@ -10,6 +10,7 @@ use App\Filament\App\Resources\EmailAccounts\Pages\CreateEmailAccount;
 use App\Filament\App\Resources\EmailAccounts\Pages\EditEmailAccount;
 use App\Filament\App\Resources\EmailAccounts\Pages\ListEmailAccounts;
 use App\Models\EmailAccount;
+use App\Services\Billing\Entitlements;
 use App\Services\Dns\TrackingDomainVerifier;
 use BackedEnum;
 use Filament\Actions\ActionGroup;
@@ -275,7 +276,7 @@ class EmailAccountResource extends Resource
 
     protected static function warmupTab(): Tab
     {
-        $locked = fn (): bool => modules()->disabled('warmup');
+        $locked = fn (): bool => ! app(Entitlements::class)->allowsModule(Filament::getTenant(), 'warmup');
 
         return Tab::make('Warmup')
             ->icon(Heroicon::OutlinedFire)
@@ -285,7 +286,14 @@ class EmailAccountResource extends Resource
                 Callout::make('Inbox warmup is coming soon')
                     ->description('Warmup builds sender reputation by exchanging real conversations with other inboxes. These settings unlock when the module is enabled.')
                     ->icon(Heroicon::OutlinedLockClosed)
-                    ->visible($locked),
+                    ->visible(fn (): bool => modules()->disabled('warmup')),
+                Callout::make('Warmup isn\'t included in your plan')
+                    ->description('Upgrade to a plan with Inbox Warmup to use these settings.')
+                    ->icon(Heroicon::OutlinedLockClosed)
+                    ->visible(fn (): bool => modules()->enabled('warmup') && $locked()),
+                Callout::make('Warmup emails are exchanged with other mailboxes in the warmup pool and filed in a "Warmup" folder. Volume starts small and grows every day up to the target. See Infrastructure → Warmup for inbox placement.')
+                    ->info()
+                    ->visible(fn (): bool => ! $locked()),
                 Grid::make(3)->schema([
                     Toggle::make('warmup_enabled')
                         ->label('Enable warmup'),
@@ -294,7 +302,7 @@ class EmailAccountResource extends Resource
                         ->numeric()
                         ->integer()
                         ->minValue(1)
-                        ->maxValue(100),
+                        ->maxValue(fn (): int => (int) config('outreach.warmup.max_daily_target')),
                     TextInput::make('warmup_reply_rate')
                         ->label('Reply rate')
                         ->numeric()

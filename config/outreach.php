@@ -168,6 +168,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Inbox warmup (`warmup` module)
+    |--------------------------------------------------------------------------
+    |
+    | Warmup mailboxes email each other short, natural conversations. The
+    | recipient's inbox check opens them, rescues them from spam, files them
+    | in the warmup folder and sometimes replies. Volume ramps up from
+    | `start_per_day`, adding `increase_per_day` each day, up to the
+    | mailbox's own daily target.
+    |
+    | `pool`: "global" pairs mailboxes across all workspaces (the bigger
+    | the pool, the better), "workspace" only within the same workspace.
+    |
+    */
+
+    'warmup' => [
+        'pool' => env('WARMUP_POOL', 'global'),
+        'header' => 'X-Warmup',
+        'start_per_day' => 2,
+        'increase_per_day' => 2,
+        'max_daily_target' => 100,
+        'folder' => env('WARMUP_FOLDER', 'Warmup'),
+        'reply_delay_minutes' => [5, 90],
+        'max_thread_depth' => 3, // a conversation has at most this many replies
+        'messages_per_run' => 30,
+        'seconds_per_run' => 35,
+        // Spam folders by name, for servers that don't mark it \Junk.
+        'spam_folders' => ['Spam', 'Junk', 'Junk Email', 'Junk E-mail', 'Bulk Mail', '[Gmail]/Spam', 'INBOX.Spam', 'INBOX.Junk'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Spam-word checker
     |--------------------------------------------------------------------------
     |

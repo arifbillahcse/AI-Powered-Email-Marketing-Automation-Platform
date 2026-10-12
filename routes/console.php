@@ -18,6 +18,11 @@ Schedule::command('campaigns:ab-test')->everyTenMinutes()->withoutOverlapping(10
 // Reply detection: check every mailbox for replies and bounces (imap queue).
 Schedule::command('inbox:sync')->everyFiveMinutes()->withoutOverlapping(10);
 
+// Inbox warmup: send due warmup emails, then handle the ones that arrived
+// (open, rescue from spam, file away, reply).
+Schedule::command('warmup:send')->everyFiveMinutes()->withoutOverlapping(10);
+Schedule::command('warmup:sync')->everyTenMinutes()->withoutOverlapping(10);
+
 // Shared hosting (cPanel): no long-running workers, so the cron-driven
 // scheduler works the queues for just under a minute, every minute.
 Schedule::command('queue:work', [

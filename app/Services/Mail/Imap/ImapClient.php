@@ -112,6 +112,89 @@ class ImapClient
     }
 
     /**
+     * Open a folder for changes (flags, moves). select() opens read-only.
+     *
+     * @return array{uid_validity: ?int, uid_next: ?int, exists: int}
+     */
+    public function selectWritable(string $folder): array
+    {
+        $result = ['uid_validity' => null, 'uid_next' => null, 'exists' => 0];
+
+        foreach ($this->command('SELECT '.$this->quote($folder), "Couldn't open the {$folder} folder.") as $response) {
+            if (preg_match('/^\* (\d+) EXISTS/i', $response['line'], $match)) {
+                $result['exists'] = (int) $match[1];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Every folder with its attributes (RFC 3501 LIST + RFC 6154 special use,
+     * e.g. \Junk for the spam folder).
+     *
+     * @return list<array{name: string, delimiter: ?string, attributes: list<string>}>
+     */
+    public function folders(): array
+    {
+        $folders = [];
+
+        foreach ($this->command('LIST "" "*"', 'Listing folders failed.') as $response) {
+            if (! preg_match('/^\* LIST \(([^)]*)\) ("(?:[^"\\\\]|\\\\.)*"|NIL) (.+)$/i', $response['line'], $match)) {
+                continue;
+            }
+
+            $name = $response['literal'] ?? trim($match[3]);
+
+            if (str_starts_with($name, '"') && str_ends_with($name, '"')) {
+                $name = stripcslashes(substr($name, 1, -1));
+            }
+
+            $folders[] = [
+                'name' => $name,
+                'delimiter' => strtoupper($match[2]) === 'NIL' ? null : stripcslashes(substr($match[2], 1, -1)),
+                'attributes' => array_values(array_filter(array_map(fn (string $flag): string => strtolower($flag), preg_split('/\s+/', trim($match[1])) ?: []))),
+            ];
+        }
+
+        return $folders;
+    }
+
+    public function createFolder(string $folder): void
+    {
+        $this->command('CREATE '.$this->quote($folder), "Couldn't create the {$folder} folder.");
+    }
+
+    /**
+     * The value of one header (e.g. X-Warmup) without downloading the message.
+     */
+    public function header(int $uid, string $name): ?string
+    {
+        $name = preg_replace('/[^A-Za-z0-9-]/', '', $name);
+
+        foreach ($this->command("UID FETCH {$uid} (BODY.PEEK[HEADER.FIELDS ({$name})])", 'Fetching a header failed.') as $response) {
+            if ($response['literal'] !== null && preg_match('/^'.preg_quote($name, '/').':\s*(.+)$/mi', $response['literal'], $match)) {
+                return trim($match[1]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  list<string>  $flags  e.g. ['\\Seen']
+     */
+    public function addFlags(int $uid, array $flags): void
+    {
+        $this->command("UID STORE {$uid} +FLAGS.SILENT (".implode(' ', $flags).')', 'Updating message flags failed.');
+    }
+
+    public function move(int $uid, string $folder): void
+    {
+        $this->command("UID MOVE {$uid} ".$this->quote($folder), "Moving a message to {$folder} failed.");
+    }
+
+    /**
      * The raw message (headers and body), cut at $maxBytes so a huge
      * attachment can't exhaust memory. Null if the message is gone.
      */

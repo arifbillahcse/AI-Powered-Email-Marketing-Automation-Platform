@@ -31,7 +31,7 @@ return [
     'warmup' => [
         'label' => 'Inbox Warmup',
         'phase' => 14,
-        'enabled' => env('MODULE_WARMUP_ENABLED', false),
+        'enabled' => env('MODULE_WARMUP_ENABLED', true),
     ],
 
     'email_verification' => [

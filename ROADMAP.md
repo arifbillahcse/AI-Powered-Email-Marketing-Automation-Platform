@@ -253,8 +253,25 @@ CRM, chat and sheets without manual work.
 
 ## Stage 3: Competitive edge
 
-### ⬜ Phase 14: Warmup (`warmup` module)
-Warmup pool, auto-replies, spam rescue, ramp-up schedules, health reports.
+### ✅ Phase 14: Warmup (`warmup` module)
+- Warmup pool: every warmup mailbox (all workspaces by default,
+  `WARMUP_POOL=workspace` to keep it inside one) emails partners on other
+  domains, preferring ones it hasn't emailed today. Short plain-text
+  business emails, no links, tagged with a random `X-Warmup` token
+- Ramp-up: 2 new conversations on day 1, +2 a day, up to the mailbox's
+  target; sends spread over the day (`warmup:send`, every 5 minutes)
+- Inbox handling over IMAP (`warmup:sync`, every 10 minutes, only for
+  mailboxes with warmup mail on the way): spam rescue (out of the \Junk
+  folder), mark read, file in a "Warmup" folder (`INBOX.Warmup` on cPanel
+  Dovecot), and auto-replies in the same thread at the mailbox's reply rate
+  (up to 3 replies per conversation, 5–90 minutes later)
+- Health report: Infrastructure → Warmup shows each mailbox's day, today's
+  volume, and 7-day sent / inbox rate / saved from spam / replies
+- Warmup mail never reaches the Unibox or reply detection; the module can
+  be sold per plan
+
+**Done when:** a new mailbox warms itself up with no manual work and its
+inbox placement is visible.
 
 ### ⬜ Phase 15: Agency and white label (`white_label` module)
 Custom domains and branding, client sub-workspaces, client reports, reseller plans.
