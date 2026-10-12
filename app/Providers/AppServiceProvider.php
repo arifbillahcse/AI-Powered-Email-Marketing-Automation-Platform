@@ -72,5 +72,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Email tracking endpoints: generous (image-heavy inboxes), but bounded.
         RateLimiter::for('tracking', fn (Request $request) => Limit::perMinute(240)->by($request->ip()));
+        // REST API: per key (by its hash), falling back to the IP for bad keys.
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)->by(
+            $request->bearerToken() ? 'key:'.hash('sha256', (string) $request->bearerToken()) : 'ip:'.$request->ip(),
+        ));
     }
 }

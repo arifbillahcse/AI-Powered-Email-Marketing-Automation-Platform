@@ -13,6 +13,7 @@ use App\Models\EmailAccount;
 use App\Models\InboxMessage;
 use App\Models\InboxThread;
 use App\Models\Lead;
+use App\Services\Integrations\IntegrationEvents;
 use App\Services\Leads\SuppressionList;
 use Illuminate\Support\Str;
 
@@ -63,6 +64,7 @@ class ReplyIntelligence
         InboxThread::query()->whereKey($message->inbox_thread_id)->update(['ai_category' => $category->value]);
 
         $this->act($message, $category);
+        $this->emit($message, $category, $summary);
 
         return $category;
     }
@@ -113,6 +115,25 @@ class ReplyIntelligence
         $reply->forceFill(['ai_draft' => Str::limit(str_replace(["\r\n", "\r"], "\n", $text), 5000, '')])->save();
 
         return $reply;
+    }
+
+    protected function emit(InboxMessage $message, ReplyCategory $category, string $summary): void
+    {
+        $thread = InboxThread::query()->find($message->inbox_thread_id);
+        $lead = $thread ? Lead::query()->find($thread->lead_id) : null;
+        $data = ['reply' => [
+            'subject' => $message->subject,
+            'text' => Str::limit($this->withoutQuote((string) $message->body), 2000),
+            'category' => $category->value,
+            'summary' => $summary,
+        ]];
+        $events = app(IntegrationEvents::class);
+
+        $events->fire($message->workspace_id, 'reply.classified', $lead, $data, $thread?->campaign_id);
+
+        if (in_array($category, [ReplyCategory::Interested, ReplyCategory::MeetingRequest], true)) {
+            $events->fire($message->workspace_id, 'reply.interested', $lead, $data, $thread?->campaign_id);
+        }
     }
 
     /**

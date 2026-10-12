@@ -16,6 +16,7 @@ use App\Models\EmailMessage;
 use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\AbTesting;
 use App\Services\Campaigns\CampaignMessageBuilder;
+use App\Services\Integrations\IntegrationEvents;
 use App\Services\Leads\SuppressionList;
 use App\Services\Mail\MailboxConnectionException;
 use App\Services\Mail\MailboxTransportFactory;
@@ -247,6 +248,10 @@ class SendCampaignEmail implements ShouldQueue
         $lead->logActivity(LeadActivityType::EmailSent, "Sent \"{$message->subject}\" (email {$step->position}, {$campaignLead->campaign->name})", [
             'email_message_id' => $message->getKey(),
         ]);
+
+        app(IntegrationEvents::class)->fire($lead->workspace_id, 'email.sent', $lead, [
+            'email' => ['id' => $message->getKey(), 'subject' => $message->subject, 'step' => $message->step_position, 'variant' => $message->variant],
+        ], $campaignLead->campaign_id);
     }
 
     protected function handleFailure(Throwable $exception, EmailMessage $message, CampaignLead $campaignLead, EmailAccount $mailbox, EngagementRecorder $engagement): void

@@ -22,6 +22,12 @@ return [
         'enabled' => env('MODULE_AI_ENABLED', true),
     ],
 
+    'api' => [
+        'label' => 'API & Integrations',
+        'phase' => 13,
+        'enabled' => env('MODULE_API_ENABLED', true),
+    ],
+
     'warmup' => [
         'label' => 'Inbox Warmup',
         'phase' => 14,

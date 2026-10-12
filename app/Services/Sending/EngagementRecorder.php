@@ -13,6 +13,7 @@ use App\Models\CampaignLead;
 use App\Models\EmailMessage;
 use App\Models\Lead;
 use App\Services\Compliance\DeliverabilityGuard;
+use App\Services\Integrations\IntegrationEvents;
 use App\Services\Leads\SuppressionList;
 use Illuminate\Support\Facades\DB;
 
@@ -41,7 +42,9 @@ class EngagementRecorder
         $message->recordEvent(EmailEventType::Open);
 
         if ($first) {
-            $this->lead($message)?->logActivity(LeadActivityType::EmailOpened, "Opened \"{$message->subject}\"");
+            $lead = $this->lead($message);
+            $lead?->logActivity(LeadActivityType::EmailOpened, "Opened \"{$message->subject}\"");
+            $this->emit('email.opened', $message, $lead);
         }
     }
 
@@ -57,7 +60,9 @@ class EngagementRecorder
         $message->recordEvent(EmailEventType::Click, $url);
 
         if ($first) {
-            $this->lead($message)?->logActivity(LeadActivityType::LinkClicked, "Clicked {$url}", ['url' => $url]);
+            $lead = $this->lead($message);
+            $lead?->logActivity(LeadActivityType::LinkClicked, "Clicked {$url}", ['url' => $url]);
+            $this->emit('email.clicked', $message, $lead, ['url' => $url]);
         }
     }
 
@@ -87,6 +92,7 @@ class EngagementRecorder
         if (! $alreadyUnsubscribed) {
             $lead->update(['status' => LeadStatus::Unsubscribed]);
             $lead->logActivity(LeadActivityType::Unsubscribed, 'Unsubscribed via the link in an email');
+            $this->emit('lead.unsubscribed', $message, $lead, ['reason' => 'unsubscribe_link']);
         }
     }
 
@@ -112,6 +118,8 @@ class EngagementRecorder
             $lead->logActivity(LeadActivityType::Bounced, 'Email bounced: '.mb_substr($reason, 0, 150));
         }
 
+        $this->emit('email.bounced', $message, $lead, ['reason' => mb_substr($reason, 0, 300)]);
+
         $this->guard->afterProblem($message);
     }
 
@@ -134,6 +142,7 @@ class EngagementRecorder
             $this->stopLead($lead, CampaignLeadStatus::Unsubscribed);
             $lead->update(['status' => LeadStatus::Unsubscribed]);
             $lead->logActivity(LeadActivityType::Complained, "Marked \"{$message->subject}\" as spam");
+            $this->emit('lead.unsubscribed', $message, $lead, ['reason' => 'spam_complaint']);
         }
 
         $this->guard->afterProblem($message);
@@ -184,6 +193,23 @@ class EngagementRecorder
         }
 
         $lead->logActivity(LeadActivityType::Replied, 'Replied'.($subject ? " to \"{$subject}\"" : ''), $properties);
+
+        app(IntegrationEvents::class)->fire($lead->workspace_id, 'lead.replied', $lead, [
+            'reply' => ['subject' => $subject],
+        ], $properties['campaign_id'] ?? null);
+    }
+
+    /**
+     * Tell integrations (webhooks, Slack, CRMs) about an email event.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function emit(string $event, EmailMessage $message, ?Lead $lead, array $data = []): void
+    {
+        app(IntegrationEvents::class)->fire($message->workspace_id, $event, $lead, [
+            'email' => ['id' => $message->getKey(), 'subject' => $message->subject, 'step' => $message->step_position, 'variant' => $message->variant],
+            ...$data,
+        ], $message->campaign_id);
     }
 
     protected function stopLead(Lead $lead, CampaignLeadStatus $status): void

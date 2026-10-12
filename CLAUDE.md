@@ -103,6 +103,12 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   (`ProcessInboundReply` job from InboundMailProcessor; `DraftInboxReply`),
   `WebsiteEnricher` + `LeadEnrichment` (`EnrichLeads` batch; HostGuard on every
   hop), `CampaignCopilot` (`WriteCampaignSequence`); `ReplyCategory` enum
+- API & integrations: `routes/api.php` (`/api/v1`, `AuthenticateApiToken:read|write`,
+  `ApiToken` hashed keys, `throttle:api`), `Http/Controllers/Api/*`, docs in `docs/API.md`;
+  `Services/Integrations/IntegrationEvents::fire()` (EngagementRecorder, SendCampaignEmail,
+  ReplyIntelligence) → `DeliverIntegrationEvent` job → `Drivers/*` (Webhook signed,
+  Slack, Telegram, HubSpot, Pipedrive, GoogleSheets); `Integration.config` is an
+  encrypted array; secrets are never filled back into forms
 - `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
   `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
   monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),

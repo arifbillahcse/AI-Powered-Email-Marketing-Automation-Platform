@@ -152,6 +152,14 @@ match the event log exactly. **Export CSV** downloads any breakdown.
   personal data" (owners/admins), which deletes everything and keeps only
   the address on the suppression list.
 
+## API and integrations
+
+- **REST API** (`/api/v1`, see [docs/API.md](docs/API.md)): create keys in
+  Settings → API keys.
+- **Settings → Integrations**: webhooks (Zapier, Make, n8n; signed), Slack,
+  Telegram, HubSpot, Pipedrive and Google Sheets, triggered by email sent /
+  opened / clicked / bounced, replies, interested replies and unsubscribes.
+
 ## AI reply intelligence
 
 With AI set up (AI settings), every new reply is sorted (interested, wants a

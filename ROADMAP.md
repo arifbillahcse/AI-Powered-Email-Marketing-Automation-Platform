@@ -228,8 +228,26 @@ filtered before sending, and sequences improve themselves with A/B tests.
 **Done when:** replies sort and label themselves, answers are a click away,
 and a new campaign can be written from a two-line brief.
 
-### ⬜ Phase 13: Integrations and API
-REST API (Sanctum), webhooks, Zapier/Make, Slack/Telegram, HubSpot/Pipedrive, Google Sheets.
+### ✅ Phase 13: Integrations and API
+- REST API v1 (`docs/API.md`): leads (list/filter/upsert/update/delete,
+  lists, tags, custom fields), lists, campaigns (stats, pause, resume),
+  replies (with AI category), suppressions. Workspace-scoped API keys
+  (hashed, read/write abilities, optional expiry), 120 req/min per key,
+  `api` module per plan. Built-in key auth instead of Sanctum (no extra
+  package; same model: hashed bearer tokens)
+- Integrations (Settings → Integrations) on one event bus
+  (`email.sent/opened/clicked/bounced`, `lead.replied`, `reply.interested`,
+  `reply.classified`, `lead.unsubscribed`), each delivery a queued job with
+  retries, a delivery log and auto-disable after 20 failures:
+  - Webhooks, signed (HMAC-SHA256, Stripe-style), for Zapier, Make, n8n
+  - Slack (incoming webhook) and Telegram (bot) alerts
+  - HubSpot (contact upsert) and Pipedrive (person + note)
+  - Google Sheets (row per event, service account)
+- Secrets (tokens, keys, Slack URLs) encrypted and never sent back to the
+  browser; webhook hosts go through HostGuard
+
+**Done when:** leads flow in from other tools and replies flow out to the
+CRM, chat and sheets without manual work.
 
 ---
 
