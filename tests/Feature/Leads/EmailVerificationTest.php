@@ -19,6 +19,7 @@ use Livewire\Livewire;
 use Tests\Fakes\FakeDnsResolver;
 
 beforeEach(function () {
+    config(['modules.email_verification.enabled' => true]);
     $this->dns = new FakeDnsResolver;
     $this->dns->mx['acme.test'] = ['mx.acme.test'];
     $this->dns->a['legacy.test'] = ['203.0.113.7']; // no MX, but an A record
