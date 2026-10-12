@@ -201,7 +201,8 @@ it('opens, rescues from spam, files and answers warmup emails over IMAP', functi
     ]);
     app()->instance(ImapConnector::class, $stream->connector());
 
-    ProcessWarmupInbox::dispatchSync($mailbox->id);
+    // Queue::fake() would capture dispatchSync too.
+    app()->call([new ProcessWarmupInbox($mailbox->id), 'handle']);
 
     expect($stream->written)->toContain(
         'A002 LIST "" "*"',
@@ -246,7 +247,7 @@ it('files warmup email under INBOX on servers that keep folders there', function
     ]);
     app()->instance(ImapConnector::class, $stream->connector());
 
-    ProcessWarmupInbox::dispatchSync($mailbox->id);
+    app()->call([new ProcessWarmupInbox($mailbox->id), 'handle']);
 
     expect($stream->written)->toContain('A003 CREATE "INBOX.Warmup"', 'A004 SELECT "INBOX.spam"', 'A006 SELECT "INBOX"');
 });

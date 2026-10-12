@@ -299,12 +299,16 @@ class EmailAccountResource extends Resource
                         ->label('Enable warmup'),
                     TextInput::make('warmup_daily_target')
                         ->label('Warmup emails / day')
+                        ->default(20)
+                        ->required()
                         ->numeric()
                         ->integer()
                         ->minValue(1)
                         ->maxValue(fn (): int => (int) config('outreach.warmup.max_daily_target')),
                     TextInput::make('warmup_reply_rate')
                         ->label('Reply rate')
+                        ->default(30)
+                        ->required()
                         ->numeric()
                         ->integer()
                         ->minValue(0)
