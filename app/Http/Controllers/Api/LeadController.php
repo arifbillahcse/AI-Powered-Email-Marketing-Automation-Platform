@@ -8,6 +8,7 @@ use App\Models\Lead;
 use App\Models\LeadList;
 use App\Services\Billing\Entitlements;
 use App\Services\Integrations\IntegrationEvents;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -113,7 +114,11 @@ class LeadController extends ApiController
             ...$fields,
             'status' => ['sometimes', Rule::enum(LeadStatus::class)],
             'custom_fields' => ['sometimes', 'array', 'max:50'],
-            'custom_fields.*' => ['nullable', 'scalar'],
+            'custom_fields.*' => ['nullable', function (string $attribute, mixed $value, Closure $fail): void {
+                if (! is_scalar($value)) {
+                    $fail('Custom field values must be text or numbers.');
+                }
+            }],
             'list_ids' => ['sometimes', 'array'],
             'list_ids.*' => ['integer'],
             'list_names' => ['sometimes', 'array'],

@@ -52,7 +52,8 @@ it('fires email.sent when a campaign email goes out', function () {
     integration($workspace, IntegrationType::Webhook, ['url' => 'https://example.test/hook', 'secret' => 's'], ['email.sent']);
     Queue::fake();
 
-    SendCampaignEmail::dispatchSync(CampaignLead::sole()->id, $mailbox->id, 1);
+    // Run the job directly: Queue::fake() would capture dispatchSync too.
+    app()->call([new SendCampaignEmail(CampaignLead::sole()->id, $mailbox->id, 1), 'handle']);
 
     Queue::assertPushed(DeliverIntegrationEvent::class, fn (DeliverIntegrationEvent $job): bool => $job->event === 'email.sent'
         && $job->payload['campaign']['id'] === $campaign->id
