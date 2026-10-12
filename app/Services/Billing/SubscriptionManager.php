@@ -184,7 +184,7 @@ class SubscriptionManager
      */
     public function assign(Workspace $workspace, Plan $plan, BillingInterval $interval, SubscriptionStatus $status, ?CarbonInterface $periodEnd): Subscription
     {
-        $subscription = Subscription::query()->firstOrNew(['workspace_id' => $workspace->getKey()]);
+        $subscription = Subscription::query()->where('workspace_id', $workspace->getKey())->first() ?? new Subscription;
         $subscription->forceFill([
             'workspace_id' => $workspace->getKey(),
             'plan_id' => $plan->getKey(),
