@@ -47,6 +47,8 @@ class Campaign extends Model
         'launched_at' => null,
         'paused_at' => null,
         'completed_at' => null,
+        'paused_reason' => null,
+        'safety_reset_at' => null,
     ];
 
     protected function casts(): array
@@ -63,6 +65,7 @@ class Campaign extends Model
             'launched_at' => 'datetime',
             'paused_at' => 'datetime',
             'completed_at' => 'datetime',
+            'safety_reset_at' => 'datetime',
         ];
     }
 

@@ -313,6 +313,8 @@ class EmailAccountResource extends Resource
                 TextColumn::make('status')
                     ->badge()
                     ->tooltip(fn (EmailAccount $record): ?string => $record->last_error)
+                    ->description(fn (EmailAccount $record): ?string => $record->paused_reason)
+                    ->wrap()
                     ->sortable(),
                 TextColumn::make('sent_today_count')
                     ->label('Sent today')

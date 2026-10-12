@@ -27,6 +27,11 @@ class NativeDnsResolver implements DnsResolver
         return $record ? strtolower(rtrim((string) $record['target'], '.')) : null;
     }
 
+    public function a(string $host): array
+    {
+        return array_values(array_filter(array_map(fn (array $record): string => (string) ($record['ip'] ?? ''), $this->lookup($host, DNS_A))));
+    }
+
     /**
      * @return list<array<string, mixed>>
      */

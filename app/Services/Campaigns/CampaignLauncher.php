@@ -127,6 +127,7 @@ class CampaignLauncher
                 'status' => CampaignStatus::Active,
                 'launched_at' => $campaign->launched_at ?? now(),
                 'paused_at' => null,
+                ...$this->clearAutoPause($campaign),
             ])->save();
 
             return $enrolled;
@@ -185,15 +186,26 @@ class CampaignLauncher
     public function pause(Campaign $campaign): void
     {
         if ($campaign->status === CampaignStatus::Active) {
-            $campaign->forceFill(['status' => CampaignStatus::Paused, 'paused_at' => now()])->save();
+            $campaign->forceFill(['status' => CampaignStatus::Paused, 'paused_at' => now(), 'paused_reason' => null])->save();
         }
     }
 
     public function resume(Campaign $campaign): void
     {
         if ($campaign->status === CampaignStatus::Paused) {
-            $campaign->forceFill(['status' => CampaignStatus::Active, 'paused_at' => null])->save();
+            $campaign->forceFill(['status' => CampaignStatus::Active, 'paused_at' => null, ...$this->clearAutoPause($campaign)])->save();
         }
+    }
+
+    /**
+     * Resuming after an automatic pause: bounce and complaint rates start
+     * again from now, so the old problem doesn't pause it straight away.
+     *
+     * @return array<string, mixed>
+     */
+    protected function clearAutoPause(Campaign $campaign): array
+    {
+        return $campaign->paused_reason === null ? [] : ['paused_reason' => null, 'safety_reset_at' => now()];
     }
 
     public function complete(Campaign $campaign): void

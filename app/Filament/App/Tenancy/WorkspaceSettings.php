@@ -2,6 +2,8 @@
 
 namespace App\Filament\App\Tenancy;
 
+use App\Enums\CampaignStatus;
+use App\Models\Campaign;
 use App\Support\Timezones;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -49,11 +51,15 @@ class WorkspaceSettings extends EditTenantProfile
                             ->columnSpanFull(),
                         TextInput::make('address_line1')
                             ->label('Address line 1')
+                            ->required(fn (): bool => $this->hasRunningCampaigns())
+                            ->validationMessages(['required' => 'Required while campaigns are active or paused.'])
                             ->maxLength(150),
                         TextInput::make('address_line2')
                             ->label('Address line 2')
                             ->maxLength(150),
                         TextInput::make('city')
+                            ->required(fn (): bool => $this->hasRunningCampaigns())
+                            ->validationMessages(['required' => 'Required while campaigns are active or paused.'])
                             ->maxLength(100),
                         TextInput::make('state')
                             ->label('State / region')
@@ -63,10 +69,23 @@ class WorkspaceSettings extends EditTenantProfile
                             ->maxLength(20),
                         TextInput::make('country')
                             ->helperText('2-letter code, e.g. BD, US, GB.')
+                            ->required(fn (): bool => $this->hasRunningCampaigns())
+                            ->validationMessages(['required' => 'Required while campaigns are active or paused.'])
                             ->length(2)
                             ->regex('/^[A-Za-z]{2}$/')
                             ->dehydrateStateUsing(fn (?string $state): ?string => $state ? strtoupper($state) : null),
                     ]),
             ]);
+    }
+
+    /**
+     * The address can't be removed while campaigns may still send.
+     */
+    protected function hasRunningCampaigns(): bool
+    {
+        return Campaign::query()
+            ->where('workspace_id', $this->tenant->getKey())
+            ->whereIn('status', [CampaignStatus::Active->value, CampaignStatus::Paused->value])
+            ->exists();
     }
 }

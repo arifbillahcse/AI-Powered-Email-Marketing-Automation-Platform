@@ -8,6 +8,7 @@ use App\Filament\App\Resources\SendingDomains\Pages\CreateSendingDomain;
 use App\Filament\App\Resources\SendingDomains\Pages\ListSendingDomains;
 use App\Filament\App\Resources\SendingDomains\Pages\ViewSendingDomain;
 use App\Models\SendingDomain;
+use App\Services\Compliance\BlacklistChecker;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
@@ -86,7 +87,61 @@ class SendingDomainResource extends Resource
                     TextEntry::make('dkim_selector')->label('DKIM selector')->placeholder('Auto-detect'),
                 ]),
             ...array_map(static::checkSection(...), array_keys(self::CHECK_LABELS)),
+            static::blacklistSection(),
         ]);
+    }
+
+    protected static function blacklistSection(): Section
+    {
+        return Section::make('Blacklists')
+            ->description('Checked daily. The domain against domain blocklists, and your mail servers\' IPs against IP blocklists.')
+            ->schema([
+                Grid::make(4)->schema([
+                    static::blacklistStatusEntry(TextEntry::make('blacklist_status')->label('Status')),
+                    TextEntry::make('blacklist_checked_at')->label('Last checked')->since()->placeholder('Never'),
+                    TextEntry::make('blacklist_ips')
+                        ->label('Mail server IPs')
+                        ->state(fn (SendingDomain $record): array => $record->blacklist['ips'] ?? [])
+                        ->fontFamily(FontFamily::Mono)
+                        ->listWithLineBreaks()
+                        ->placeholder('None found')
+                        ->columnSpan(2),
+                ]),
+                TextEntry::make('blacklist_listings')
+                    ->label('Listed on')
+                    ->state(fn (SendingDomain $record): array => collect($record->blacklist['listings'] ?? [])
+                        ->map(fn (array $listing): string => "{$listing['list']}: {$listing['target']}")->all())
+                    ->listWithLineBreaks()
+                    ->color('danger')
+                    ->visible(fn (SendingDomain $record): bool => filled($record->blacklist['listings'] ?? null)),
+                TextEntry::make('blacklist_help')
+                    ->label('How to fix')
+                    ->state('Stop sending from this domain, find the cause (an unverified list, a compromised mailbox, too much volume), then request removal on the blacklist\'s website. Most listings expire on their own once the spam stops.')
+                    ->visible(fn (SendingDomain $record): bool => filled($record->blacklist['listings'] ?? null)),
+                TextEntry::make('blacklist_checked_lists')
+                    ->label('Checked')
+                    ->state(fn (SendingDomain $record): ?string => filled($record->blacklist['checked'] ?? null)
+                        ? implode(', ', $record->blacklist['checked'])
+                            .(filled($record->blacklist['unknown'] ?? null) ? '. Couldn\'t check (the list refused the query): '.implode(', ', $record->blacklist['unknown']) : '')
+                        : null)
+                    ->placeholder('Not checked yet'),
+            ]);
+    }
+
+    public static function blacklistStatusEntry(TextEntry|TextColumn $component): TextEntry|TextColumn
+    {
+        return $component
+            ->badge()
+            ->formatStateUsing(fn (?string $state): string => match ($state) {
+                BlacklistChecker::CLEAN => 'Clean',
+                BlacklistChecker::LISTED => 'Listed',
+                default => 'Not checked',
+            })
+            ->color(fn (?string $state): string => match ($state) {
+                BlacklistChecker::CLEAN => 'success',
+                BlacklistChecker::LISTED => 'danger',
+                default => 'gray',
+            });
     }
 
     protected static function checkSection(string $check): Section
@@ -159,6 +214,8 @@ class SendingDomainResource extends Resource
                 $checkColumn('spf', 'SPF'),
                 $checkColumn('dkim', 'DKIM'),
                 $checkColumn('dmarc', 'DMARC'),
+                static::blacklistStatusEntry(TextColumn::make('blacklist_status')->label('Blacklists'))
+                    ->sortable(),
                 TextColumn::make('email_accounts_count')
                     ->label('Mailboxes')
                     ->sortable(),

@@ -16,6 +16,9 @@ use Illuminate\Support\Str;
  * `checks` holds one entry per check (mx, spf, dkim, dmarc):
  * ['status' => 'pass|warning|fail', 'summary' => string, 'records' => list<string>,
  *  'fix' => ?['type' => string, 'host' => string, 'value' => string], 'help' => ?string]
+ *
+ * `blacklist` holds the latest DNSBL check (see BlacklistChecker):
+ * ['listings' => list<['list' => string, 'target' => string]>, 'checked' => list<string>, 'ips' => list<string>, 'unknown' => list<string>]
  */
 class SendingDomain extends Model
 {
@@ -40,6 +43,9 @@ class SendingDomain extends Model
         'dkim_selector' => null,
         'checks' => null,
         'last_checked_at' => null,
+        'blacklist_status' => 'pending',
+        'blacklist' => null,
+        'blacklist_checked_at' => null,
     ];
 
     protected function casts(): array
@@ -48,6 +54,8 @@ class SendingDomain extends Model
             'status' => DnsCheckStatus::class,
             'checks' => 'array',
             'last_checked_at' => 'datetime',
+            'blacklist' => 'array',
+            'blacklist_checked_at' => 'datetime',
         ];
     }
 

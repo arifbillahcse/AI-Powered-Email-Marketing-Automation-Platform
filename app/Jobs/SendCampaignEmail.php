@@ -83,6 +83,19 @@ class SendCampaignEmail implements ShouldQueue
             return;
         }
 
+        // Every campaign email carries the sender's postal address (CAN-SPAM).
+        // If it was removed after launch, stop the campaign instead of sending without it.
+        if (! $campaign->workspace->hasMailingAddress()) {
+            $campaign->forceFill([
+                'status' => CampaignStatus::Paused,
+                'paused_at' => now(),
+                'paused_reason' => 'Paused: the workspace mailing address is missing. Anti-spam law requires it in every email; add it in Workspace settings.',
+            ])->save();
+            $this->release($campaignLead);
+
+            return;
+        }
+
         // Last-moment compliance check.
         if ($suppressions->isSuppressed($lead->workspace_id, $lead->email)) {
             $campaignLead->forceFill(['status' => CampaignLeadStatus::Stopped, 'next_send_at' => null])->save();

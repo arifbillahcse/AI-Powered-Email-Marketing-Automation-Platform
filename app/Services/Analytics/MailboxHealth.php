@@ -30,7 +30,7 @@ class MailboxHealth
             ->where('sent_at', '>=', now()->subDays(self::DAYS))
             ->whereIn('email_account_id', $mailboxes->modelKeys())
             ->groupBy('email_account_id')
-            ->selectRaw('email_account_id, count(*) as sent, count(replied_at) as replied, count(bounced_at) as bounced, count(unsubscribed_at) as unsubscribed')
+            ->selectRaw('email_account_id, count(*) as sent, count(replied_at) as replied, count(bounced_at) as bounced, count(unsubscribed_at) as unsubscribed, count(complained_at) as complained')
             ->get()
             ->keyBy('email_account_id');
 
@@ -40,12 +40,13 @@ class MailboxHealth
                 'replied' => (int) ($stats[$mailbox->getKey()]->replied ?? 0),
                 'bounced' => (int) ($stats[$mailbox->getKey()]->bounced ?? 0),
                 'unsubscribed' => (int) ($stats[$mailbox->getKey()]->unsubscribed ?? 0),
+                'complained' => (int) ($stats[$mailbox->getKey()]->complained ?? 0),
             ]),
         ]);
     }
 
     /**
-     * @param  array{sent: int, replied: int, bounced: int, unsubscribed: int}  $stats  Last 30 days
+     * @param  array{sent: int, replied: int, bounced: int, unsubscribed: int, complained?: int}  $stats  Last 30 days
      * @return array{score: int, grade: string, color: string, issues: list<string>, sent: int}
      */
     public function score(EmailAccount $mailbox, array $stats): array
@@ -63,6 +64,21 @@ class MailboxHealth
 
         if ($bounceRate > 2) {
             $penalize((int) min(40, round($bounceRate * 8)), sprintf('Bounce rate %.1f%% (keep it under 2%%: verify your list).', $bounceRate));
+        }
+
+        $complaintRate = $sent ? ($stats['complained'] ?? 0) / $sent * 100 : 0;
+
+        if ($complaintRate > 0.1) {
+            $penalize((int) min(40, round($complaintRate * 100)), sprintf('Spam complaint rate %.2f%% (Gmail and Yahoo require under 0.3%%; aim for under 0.1%%).', $complaintRate));
+        }
+
+        if ($mailbox->paused_reason) {
+            $penalize(20, $mailbox->paused_reason);
+        }
+
+        if ($mailbox->sendingDomain?->blacklist_status === 'listed') {
+            $lists = collect($mailbox->sendingDomain->blacklist['listings'] ?? [])->pluck('list')->unique()->implode(', ');
+            $penalize(30, "The sending domain or its mail server is on a blacklist ({$lists}). See Sending domains.");
         }
 
         if ($unsubscribeRate > 1) {

@@ -11,6 +11,7 @@ enum SuppressionReason: string implements HasColor, HasLabel
     case Unsubscribed = 'unsubscribed';
     case Bounced = 'bounced';
     case Complaint = 'complaint';
+    case Erased = 'erased';
 
     public function getLabel(): string
     {
@@ -19,13 +20,14 @@ enum SuppressionReason: string implements HasColor, HasLabel
             self::Unsubscribed => 'Unsubscribed',
             self::Bounced => 'Hard bounce',
             self::Complaint => 'Spam complaint',
+            self::Erased => 'Data erased (GDPR)',
         };
     }
 
     public function getColor(): string
     {
         return match ($this) {
-            self::Manual => 'gray',
+            self::Manual, self::Erased => 'gray',
             self::Unsubscribed => 'warning',
             self::Bounced, self::Complaint => 'danger',
         };

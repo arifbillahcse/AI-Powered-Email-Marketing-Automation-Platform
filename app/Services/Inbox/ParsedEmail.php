@@ -103,6 +103,28 @@ final class ParsedEmail
     }
 
     /**
+     * A spam complaint forwarded by a mailbox provider's feedback loop
+     * (ARF, RFC 5965): multipart/report with report-type=feedback-report.
+     */
+    public function isFeedbackReport(): bool
+    {
+        return str_contains($this->contentType, 'multipart/report')
+            && str_contains(strtolower($this->header('Content-Type') ?? ''), 'feedback-report');
+    }
+
+    /**
+     * The complaining recipient named in a feedback report.
+     */
+    public function feedbackRecipient(): ?string
+    {
+        if (preg_match('/^(?:Original-Rcpt-To|Removal-Recipient):\s*<?([^\s<>]+@[^\s<>]+)>?/mi', $this->raw, $match)) {
+            return strtolower($match[1]);
+        }
+
+        return null;
+    }
+
+    /**
      * A delivery status notification (bounce).
      */
     public function isDeliveryReport(): bool

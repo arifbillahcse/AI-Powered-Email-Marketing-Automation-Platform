@@ -116,6 +116,82 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Deliverability safety (auto-pause)
+    |--------------------------------------------------------------------------
+    |
+    | A mailbox or campaign whose bounce or spam-complaint rate goes over
+    | these limits is paused automatically, before it damages the domain.
+    | Gmail and Yahoo require complaints under 0.3%; bounces over ~5% mean
+    | an unverified list. Rates count emails sent in the last `window_days`
+    | (and only after the last manual resume), once at least `min_sent`
+    | have gone out.
+    |
+    */
+
+    'safety' => [
+        'enabled' => (bool) env('AUTO_PAUSE_ENABLED', true),
+        'window_days' => 7,
+        'min_sent' => 20,
+        'max_bounce_rate' => (float) env('AUTO_PAUSE_BOUNCE_RATE', 5.0), // percent
+        'max_complaint_rate' => (float) env('AUTO_PAUSE_COMPLAINT_RATE', 0.3), // percent
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Spam-word checker
+    |--------------------------------------------------------------------------
+    |
+    | Phrases that spam filters (and readers) associate with bulk mail.
+    | Matched as whole words, case-insensitively.
+    |
+    */
+
+    'spam' => [
+        'words' => [
+            '100% free', '100% satisfied', 'act now', 'apply now', 'as seen on', 'bargain', 'best price',
+            'big bucks', 'billion', 'buy now', 'call now', 'cash bonus', 'cheap', 'click below', 'click here',
+            'congratulations', 'dear friend', 'double your', 'earn money', 'extra income', 'fast cash',
+            'free access', 'free gift', 'free money', 'free trial', 'get paid', 'guarantee', 'guaranteed',
+            'increase sales', 'incredible deal', 'limited time', 'lowest price', 'make money', 'million dollars',
+            'miracle', 'no catch', 'no cost', 'no credit check', 'no obligation', 'no strings attached',
+            'not spam', 'offer expires', 'once in a lifetime', 'order now', 'risk-free', 'risk free',
+            'special promotion', 'this is not spam', 'unlimited', 'urgent', 'winner', 'you have been selected',
+            'work from home', '$$$', 'cash', 'crypto', 'viagra', 'casino', 'loan', 'prize',
+        ],
+        'url_shorteners' => [
+            'bit.ly', 'tinyurl.com', 'goo.gl', 't.co', 'ow.ly', 'is.gd', 'buff.ly', 'rebrand.ly', 'cutt.ly', 'shorturl.at', 'rb.gy',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blacklist (DNSBL) monitoring
+    |--------------------------------------------------------------------------
+    |
+    | Sending domains are checked against domain blocklists, and the IPs of
+    | their mailboxes' SMTP servers against IP blocklists, once a day.
+    | Spamhaus refuses queries from big public resolvers (8.8.8.8 etc.);
+    | those answers are reported as "couldn't check", never as listed.
+    |
+    */
+
+    'blacklists' => [
+        'domains' => [
+            'dbl.spamhaus.org' => 'Spamhaus DBL',
+            'multi.surbl.org' => 'SURBL',
+            'multi.uribl.com' => 'URIBL',
+        ],
+        'ips' => [
+            'zen.spamhaus.org' => 'Spamhaus ZEN',
+            'bl.spamcop.net' => 'SpamCop',
+            'b.barracudacentral.org' => 'Barracuda',
+            'psbl.surriel.com' => 'PSBL',
+        ],
+        'max_ips' => 5,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | AI personalization
     |--------------------------------------------------------------------------
     |

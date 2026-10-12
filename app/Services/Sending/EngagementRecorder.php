@@ -12,17 +12,21 @@ use App\Models\Campaign;
 use App\Models\CampaignLead;
 use App\Models\EmailMessage;
 use App\Models\Lead;
+use App\Services\Compliance\DeliverabilityGuard;
 use App\Services\Leads\SuppressionList;
 use Illuminate\Support\Facades\DB;
 
 /**
  * What happens to campaigns, leads and the suppression list when an email
- * is opened, clicked, bounces, or the lead unsubscribes.
+ * is opened, clicked, bounces, is reported as spam, or the lead
+ * unsubscribes. Bounces and complaints also run the deliverability guard,
+ * which pauses a mailbox or campaign whose rates get too high.
  */
 class EngagementRecorder
 {
     public function __construct(
         protected SuppressionList $suppressions,
+        protected DeliverabilityGuard $guard,
     ) {}
 
     public function open(EmailMessage $message): void
@@ -101,14 +105,38 @@ class EngagementRecorder
 
         $message->recordEvent(EmailEventType::Bounce);
 
-        if (! $lead) {
+        if ($lead) {
+            $this->suppressions->add($lead->workspace_id, $lead->email, SuppressionReason::Bounced);
+            $this->stopLead($lead, CampaignLeadStatus::Bounced);
+            $lead->update(['status' => LeadStatus::Bounced]);
+            $lead->logActivity(LeadActivityType::Bounced, 'Email bounced: '.mb_substr($reason, 0, 150));
+        }
+
+        $this->guard->afterProblem($message);
+    }
+
+    /**
+     * The lead marked the email as spam (a feedback-loop report): never
+     * email them again, and check the sender's complaint rate. Safe to call
+     * more than once.
+     */
+    public function complaint(EmailMessage $message): void
+    {
+        if ($message->complained_at !== null) {
             return;
         }
 
-        $this->suppressions->add($lead->workspace_id, $lead->email, SuppressionReason::Bounced);
-        $this->stopLead($lead, CampaignLeadStatus::Bounced);
-        $lead->update(['status' => LeadStatus::Bounced]);
-        $lead->logActivity(LeadActivityType::Bounced, 'Email bounced: '.mb_substr($reason, 0, 150));
+        $message->forceFill(['complained_at' => now()])->save();
+        $message->recordEvent(EmailEventType::Complaint);
+
+        if ($lead = $this->lead($message)) {
+            $this->suppressions->add($lead->workspace_id, $lead->email, SuppressionReason::Complaint);
+            $this->stopLead($lead, CampaignLeadStatus::Unsubscribed);
+            $lead->update(['status' => LeadStatus::Unsubscribed]);
+            $lead->logActivity(LeadActivityType::Complained, "Marked \"{$message->subject}\" as spam");
+        }
+
+        $this->guard->afterProblem($message);
     }
 
     /**

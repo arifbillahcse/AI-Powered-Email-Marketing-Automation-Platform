@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 /**
  * Decides what an email that arrived in a connected mailbox means:
  *
+ * - a spam complaint (feedback-loop report): suppresses the lead and
+ *   counts towards the sender's complaint rate;
  * - a bounce (delivery report): hard bounces suppress the lead;
  * - a reply to a campaign email or to one of our hand-written emails:
  *   matched by In-Reply-To/References, or else by the sender being a lead
@@ -41,6 +43,12 @@ class InboundMailProcessor
         $email = ParsedEmail::fromRaw($raw);
 
         if ($email->fromEmail === null || $email->fromEmail === strtolower($mailbox->email)) {
+            return null;
+        }
+
+        if ($email->isFeedbackReport()) {
+            $this->complaint($mailbox, $email);
+
             return null;
         }
 
@@ -200,6 +208,32 @@ class InboundMailProcessor
         ])->save();
 
         return $message;
+    }
+
+    /**
+     * Find the reported email (the original's Message-ID is quoted in the
+     * report), or else the latest email to the complaining recipient.
+     */
+    protected function complaint(EmailAccount $mailbox, ParsedEmail $email): void
+    {
+        $sent = EmailMessage::query()
+            ->where('workspace_id', $mailbox->workspace_id)
+            ->whereIn('message_id', ParsedEmail::ids($email->raw, bareFallback: false))
+            ->first();
+
+        if (! $sent && ($recipient = $email->feedbackRecipient())) {
+            $leadId = Lead::query()->where('workspace_id', $mailbox->workspace_id)->where('email', $recipient)->value('id');
+
+            $sent = $leadId ? EmailMessage::query()
+                ->where('lead_id', $leadId)
+                ->whereNotNull('sent_at')
+                ->latest('sent_at')
+                ->first() : null;
+        }
+
+        if ($sent) {
+            $this->engagement->complaint($sent);
+        }
     }
 
     /**

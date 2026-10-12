@@ -18,6 +18,14 @@ class EditEmailAccount extends EditRecord
 
     protected static string $resource = EmailAccountResource::class;
 
+    public function getSubheading(): ?string
+    {
+        /** @var EmailAccount $account */
+        $account = $this->record;
+
+        return $account->paused_reason ? "⚠ {$account->paused_reason}" : null;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

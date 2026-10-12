@@ -80,7 +80,7 @@ class EmailAccountActions
             ->requiresConfirmation()
             ->modalDescription('Campaigns stop sending from this mailbox until you resume it.')
             ->action(function (EmailAccount $record): void {
-                $record->forceFill(['status' => EmailAccountStatus::Paused])->save();
+                $record->forceFill(['status' => EmailAccountStatus::Paused, 'paused_reason' => null])->save();
                 Notification::make()->title('Mailbox paused')->success()->send();
             });
     }
@@ -94,7 +94,11 @@ class EmailAccountActions
             ->visible(fn (EmailAccount $record): bool => $record->status === EmailAccountStatus::Paused)
             ->action(function (EmailAccount $record): void {
                 // Resume into "active", then re-test so a broken login shows up right away.
-                $record->forceFill(['status' => EmailAccountStatus::Active])->save();
+                // After an automatic pause, bounce/complaint rates start again from now.
+                $record->forceFill([
+                    'status' => EmailAccountStatus::Active,
+                    ...($record->paused_reason === null ? [] : ['paused_reason' => null, 'safety_reset_at' => now()]),
+                ])->save();
                 static::runConnectionTest($record);
             });
     }

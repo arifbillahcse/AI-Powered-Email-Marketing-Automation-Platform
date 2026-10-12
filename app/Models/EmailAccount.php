@@ -86,6 +86,8 @@ class EmailAccount extends Model
         'imap_last_uid' => null,
         'imap_synced_at' => null,
         'imap_error' => null,
+        'paused_reason' => null,
+        'safety_reset_at' => null,
     ];
 
     protected function casts(): array
@@ -111,6 +113,7 @@ class EmailAccount extends Model
             'warmup_enabled' => 'boolean',
             'warmup_started_at' => 'datetime',
             'next_send_at' => 'datetime',
+            'safety_reset_at' => 'datetime',
         ];
     }
 

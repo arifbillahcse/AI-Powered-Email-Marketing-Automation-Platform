@@ -51,7 +51,9 @@ class SendingDiagnostics
         if ($campaign->status !== CampaignStatus::Active) {
             $add(self::BLOCKER, match ($campaign->status) {
                 CampaignStatus::Draft => 'The campaign is a draft. Launch it to start sending.',
-                CampaignStatus::Paused => 'The campaign is paused. Resume it to continue sending.',
+                CampaignStatus::Paused => $campaign->paused_reason
+                    ? "{$campaign->paused_reason} Resume it once the problem is fixed."
+                    : 'The campaign is paused. Resume it to continue sending.',
                 default => 'The campaign is finished.',
             });
 
@@ -161,7 +163,9 @@ class SendingDiagnostics
     protected function mailboxProblem(EmailAccount $mailbox, CarbonInterface $now, string $timezone): ?array
     {
         if ($mailbox->status === EmailAccountStatus::Paused) {
-            return ['level' => self::BLOCKER, 'message' => 'paused. Resume it on the Email accounts page.'];
+            return ['level' => self::BLOCKER, 'message' => $mailbox->paused_reason
+                ? "{$mailbox->paused_reason} Resume it on the Email accounts page once the problem is fixed."
+                : 'paused. Resume it on the Email accounts page.'];
         }
 
         if ($mailbox->status === EmailAccountStatus::Error) {

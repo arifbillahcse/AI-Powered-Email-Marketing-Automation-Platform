@@ -229,6 +229,15 @@ The same cron checks every mailbox for replies every 5 minutes over IMAP
 up over a few runs. Your host must allow outbound connections to your IMAP
 servers; if a mailbox can't be read, the error is saved on it.
 
+## Deliverability safety
+
+Bounce and spam-complaint rates are checked after every bounce and
+complaint, and a mailbox or campaign over the limits is paused
+automatically. Blacklist checks run daily at 04:00 (same cron). They use
+the server's DNS resolver: if your host forwards DNS to Google or
+Cloudflare, Spamhaus refuses the queries and the domain page shows
+"couldn't check" for those lists (never a false "listed").
+
 ## Large CSV imports
 
 Imports run in the background via the cron job, 100 rows per job. A 50,000-row

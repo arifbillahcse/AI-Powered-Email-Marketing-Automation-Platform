@@ -15,6 +15,9 @@ class FakeDnsResolver implements DnsResolver
     /** @var array<string, string> */
     public array $cname = [];
 
+    /** @var array<string, list<string>> */
+    public array $a = [];
+
     public function txt(string $host): array
     {
         return $this->txt[$host] ?? [];
@@ -28,6 +31,11 @@ class FakeDnsResolver implements DnsResolver
     public function cname(string $host): ?string
     {
         return $this->cname[$host] ?? null;
+    }
+
+    public function a(string $host): array
+    {
+        return $this->a[$host] ?? [];
     }
 
     /**

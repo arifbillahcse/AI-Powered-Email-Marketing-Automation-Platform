@@ -29,6 +29,7 @@ class EmailMessage extends Model
         'bounced_at' => null,
         'replied_at' => null,
         'unsubscribed_at' => null,
+        'complained_at' => null,
     ];
 
     protected function casts(): array
@@ -44,6 +45,7 @@ class EmailMessage extends Model
             'bounced_at' => 'datetime',
             'replied_at' => 'datetime',
             'unsubscribed_at' => 'datetime',
+            'complained_at' => 'datetime',
         ];
     }
 

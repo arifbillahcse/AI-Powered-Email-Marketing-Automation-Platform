@@ -19,6 +19,7 @@ class ViewSendingDomain extends ViewRecord
     {
         return [
             SendingDomainActions::checkNow(),
+            SendingDomainActions::checkBlacklists(),
             Action::make('setDkimSelector')
                 ->label('Set DKIM selector')
                 ->icon(Heroicon::OutlinedKey)

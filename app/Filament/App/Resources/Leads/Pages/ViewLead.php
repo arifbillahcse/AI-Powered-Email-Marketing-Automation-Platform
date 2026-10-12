@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Leads\Pages;
 
+use App\Filament\App\Actions\LeadPrivacyActions;
 use App\Filament\App\Actions\SendLeadEmailAction;
 use App\Filament\App\Resources\Leads\LeadResource;
 use Filament\Actions\EditAction;
@@ -16,6 +17,7 @@ class ViewLead extends ViewRecord
         return [
             SendLeadEmailAction::make(),
             EditAction::make(),
+            LeadPrivacyActions::group(),
         ];
     }
 }

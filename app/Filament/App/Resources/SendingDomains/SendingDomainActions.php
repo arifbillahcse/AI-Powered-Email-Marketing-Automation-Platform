@@ -3,11 +3,13 @@
 namespace App\Filament\App\Resources\SendingDomains;
 
 use App\Enums\DnsCheckStatus;
+use App\Jobs\CheckDomainBlacklists;
 use App\Models\SendingDomain;
 use App\Services\Dns\DomainHealthChecker;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Auth;
 
 class SendingDomainActions
 {
@@ -30,6 +32,25 @@ class SendingDomainActions
                 };
 
                 $notification->send();
+            });
+    }
+
+    public static function checkBlacklists(): Action
+    {
+        return Action::make('checkBlacklists')
+            ->label('Check blacklists')
+            ->icon(Heroicon::OutlinedShieldExclamation)
+            ->color('gray')
+            ->authorize('view')
+            ->rateLimit(5)
+            ->action(function (SendingDomain $record): void {
+                CheckDomainBlacklists::dispatch($record->getKey(), Auth::id());
+
+                Notification::make()
+                    ->title('Blacklist check queued')
+                    ->body('You\'ll get a notification with the result in a minute.')
+                    ->success()
+                    ->send();
             });
     }
 }

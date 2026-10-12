@@ -33,3 +33,6 @@ Schedule::command('model:prune')->daily();
 
 // Re-check sending domains' DNS so broken SPF/DKIM/DMARC is caught early.
 Schedule::command('domains:check')->dailyAt('03:00');
+
+// Blacklist (DNSBL) monitoring for sending domains and their mail servers.
+Schedule::command('domains:blacklists')->dailyAt('04:00');

@@ -19,4 +19,11 @@ interface DnsResolver
     public function mx(string $host): array;
 
     public function cname(string $host): ?string;
+
+    /**
+     * IPv4 addresses (A records).
+     *
+     * @return list<string>
+     */
+    public function a(string $host): array;
 }

@@ -135,9 +135,29 @@ Split into 5a (queue + throttling) and 5b (tracking + bounces) if needed.
 
 ## Stage 2: Launch-ready SaaS
 
-### ⬜ Phase 9: Compliance and deliverability safety
-Complaint/bounce monitoring, auto-pause, spam-word checker, DNSBL monitoring,
-GDPR export/delete, enforced unsubscribe + address footer.
+### ✅ Phase 9: Compliance and deliverability safety
+- Spam complaints: feedback-loop (ARF) reports found in the inbox suppress
+  the lead, stop their sequences and count towards the complaint rate
+- Auto-pause: a mailbox or campaign whose bounce rate (> 5%) or complaint
+  rate (> 0.3%) over the last 7 days crosses the limit (after 20+ emails) is
+  paused with the reason shown, and owners/admins are notified. Resuming
+  restarts the count. Limits in `config/outreach.php` (`safety`)
+- Inbox health score includes complaints, auto-pauses and blacklist listings
+- Spam-word checker: a live score (0–100) under every email in the sequence
+  editor, plus a "Spam check" button listing every issue (spam phrases, caps,
+  exclamation marks, links, shorteners, images, length, prices)
+- DNSBL monitoring: sending domains (Spamhaus DBL, SURBL, URIBL) and their
+  SMTP servers' IPs (Spamhaus ZEN, SpamCop, Barracuda, PSBL) checked daily
+  and on demand; new listings alert owners/admins; refused queries never
+  count as listed
+- GDPR: download everything stored about a lead (JSON), and erase a lead
+  (owners/admins), keeping only the address on the suppression list
+- Enforced footer: unsubscribe link + List-Unsubscribe headers and the postal
+  address in every campaign email (Phase 5); the address can't be removed
+  while campaigns run, and a campaign pauses rather than send without it
+
+**Done when:** a bad list or a blacklisting stops sending by itself, and
+every lead's data can be exported or erased on request.
 
 ### ⬜ Phase 10: Billing and super admin
 Plans mapped to modules, Stripe/Paddle + bKash/SSLCommerz adapter, trials,

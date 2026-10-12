@@ -43,6 +43,7 @@ class EditCampaign extends EditRecord
 
         return collect([
             $blocked ? "⚠ Not sending right now: {$blocked}" : null,
+            $campaign->status === CampaignStatus::Paused && $campaign->paused_reason ? "⚠ {$campaign->paused_reason}" : null,
             'Status: '.$campaign->status->getLabel(),
             Number::format((int) $stats?->sent).' sent',
             $campaign->track_opens ? Number::format((int) $stats?->opened).' opened' : null,

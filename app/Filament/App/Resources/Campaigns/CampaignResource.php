@@ -12,8 +12,10 @@ use App\Models\Campaign;
 use App\Models\EmailAccount;
 use App\Services\Campaigns\CampaignAudience;
 use App\Services\Campaigns\CampaignMessageBuilder;
+use App\Services\Compliance\SpamChecker;
 use App\Support\Timezones;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -21,6 +23,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
@@ -37,6 +40,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Number;
 use UnitEnum;
 
@@ -103,6 +107,7 @@ class CampaignResource extends Resource
                     ->itemLabel(fn (array $state): string => filled($state['subject'] ?? null)
                         ? (string) $state['subject']
                         : 'Follow-up (same thread)')
+                    ->extraItemActions([static::spamCheckAction()])
                     ->schema([
                         Grid::make(4)->schema([
                             TextInput::make('delay_days')
@@ -118,6 +123,7 @@ class CampaignResource extends Resource
                             TextInput::make('subject')
                                 ->helperText('Leave blank on a follow-up to reply in the same thread.')
                                 ->maxLength(255)
+                                ->live(onBlur: true)
                                 ->columnSpan(3),
                         ]),
                         // One field for both modes: in plain-text mode the HTML is
@@ -126,9 +132,54 @@ class CampaignResource extends Resource
                             ->hiddenLabel()
                             ->required()
                             ->helperText(fn (Get $get): ?string => $get('../../plain_text') ? 'Plain-text mode: formatting is removed when sending; links become "text (url)".' : null)
-                            ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']]),
+                            ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']])
+                            ->live(onBlur: true),
+                        Text::make(fn (Get $get): string => app(SpamChecker::class)->summary($get('subject'), static::editorHtml($get('body'))))
+                            ->color(fn (Get $get): string => app(SpamChecker::class)->check($get('subject'), static::editorHtml($get('body')))['color']),
                     ]),
             ]);
+    }
+
+    /**
+     * Every spam issue found in one email of the sequence (its unsaved state).
+     */
+    protected static function spamCheckAction(): Action
+    {
+        return Action::make('spamCheck')
+            ->label('Spam check')
+            ->icon(Heroicon::OutlinedShieldCheck)
+            ->color('gray')
+            ->modalHeading('Spam check')
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close')
+            ->modalContent(function (array $arguments, Repeater $component): HtmlString {
+                $item = $component->getRawItemState($arguments['item']);
+                $result = app(SpamChecker::class)->check($item['subject'] ?? null, static::editorHtml($item['body'] ?? null));
+
+                $issues = $result['issues'] === []
+                    ? '<p>No problems found.</p>'
+                    : '<ul style="list-style: disc; padding-inline-start: 1.25rem; display: grid; gap: .375rem;">'
+                        .collect($result['issues'])->map(fn (string $issue): string => '<li>'.e($issue).'</li>')->implode('')
+                        .'</ul>';
+
+                return new HtmlString('<div style="display: grid; gap: .75rem; font-size: .875rem;">'
+                    .'<p><strong>'.e("{$result['score']}/100 · {$result['label']}").'</strong></p>'
+                    .$issues
+                    .'<p style="opacity: .7;">Spam filters also weigh your domain (SPF, DKIM, DMARC), bounce and complaint rates, and sending volume.</p>'
+                    .'</div>');
+            });
+    }
+
+    /**
+     * The editor's live state is a document array until it's saved as HTML.
+     */
+    public static function editorHtml(mixed $state): string
+    {
+        if (is_array($state)) {
+            return RichContentRenderer::make($state)->toUnsafeHtml();
+        }
+
+        return (string) $state;
     }
 
     protected static function audienceTab(): Tab

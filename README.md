@@ -132,6 +132,26 @@ mailbox. Each mailbox gets an inbox health score (0–100) with the reasons
 it lost points. Rates are a share of the emails sent in the period, so they
 match the event log exactly. **Export CSV** downloads any breakdown.
 
+## Deliverability safety
+
+- **Auto-pause.** When a mailbox's or campaign's bounce rate goes over 5%, or
+  its spam-complaint rate over 0.3% (last 7 days, after at least 20 emails),
+  it is paused automatically. The reason shows on the mailbox, the campaign
+  and in "Sending status", and owners/admins get a notification. Resuming
+  starts the count again. Limits: `AUTO_PAUSE_BOUNCE_RATE`,
+  `AUTO_PAUSE_COMPLAINT_RATE`, `AUTO_PAUSE_ENABLED`.
+- **Spam complaints.** Feedback-loop reports (ARF) that arrive in a connected
+  mailbox suppress the lead and count towards the complaint rate.
+- **Spam check.** Every email in the sequence editor shows a 0–100 score;
+  "Spam check" on an email lists what to change.
+- **Blacklists.** Domains → each domain is checked daily against Spamhaus,
+  SURBL, URIBL, and its mail servers' IPs against Spamhaus ZEN, SpamCop,
+  Barracuda and PSBL. "Check blacklists" runs it now. Spamhaus refuses
+  queries from big public DNS resolvers: those show as "couldn't check".
+- **GDPR.** On a lead: Privacy → "Download personal data" (JSON) or "Erase
+  personal data" (owners/admins), which deletes everything and keeps only
+  the address on the suppression list.
+
 ## Leads
 
 Outreach → **Leads** imports CSV or Excel (.xlsx) files in the background (100-row chunks, so it

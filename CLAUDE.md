@@ -82,6 +82,13 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   `AnalyticsFilters` (period in the workspace time zone), `MailboxHealth`, `AnalyticsCsv`
 - `app/Filament/App/Pages/Analytics.php` (filters + widgets in
   `Widgets/Analytics/`) and `Pages/Dashboard.php` (explicit widget list)
+- `app/Services/Compliance/`: `DeliverabilityGuard` (auto-pause on bounce/
+  complaint rates, run by `EngagementRecorder` after every bounce and
+  complaint), `SpamChecker`, `BlacklistChecker` (DNSBL; `CheckDomainBlacklists`
+  job, `domains:blacklists` daily), `LeadDataExporter` + `LeadEraser` (GDPR),
+  `WorkspaceAlerts` (database notifications to owners/admins)
+- Auto-paused mailboxes and campaigns carry `paused_reason`; resuming clears it
+  and sets `safety_reset_at` (rates only count emails sent after it)
 - `config/outreach.php`: mailbox limits, DKIM selectors, tracking CNAME target, AI models/prices
 - `config/modules.php` + `app/Support/Modules/ModuleRegistry.php`: feature flags
 - `resources/css/filament/app/theme.css`: customer panel theme
