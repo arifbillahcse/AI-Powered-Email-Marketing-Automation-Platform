@@ -25,7 +25,8 @@ it('enriches a lead from their website', function () {
     websiteAi();
     $workspace = actingInWorkspace();
     $lead = Lead::factory()->for($workspace)->create(['email' => 'jane@acme.test', 'website' => 'acme.test', 'custom_fields' => ['team_size' => '12']]);
-    Http::fake(['https://acme.test' => Http::response('<html><head><title>Acme Clinic Software</title><meta name="description" content="Booking for clinics"></head><body><script>evil()</script><p>We help clinics take bookings online.</p></body></html>', 200, ['Content-Type' => 'text/html; charset=utf-8'])]);
+    $this->mock(HostGuard::class)->shouldReceive('assertAllowed'); // no DNS in tests
+    Http::fake(['acme.test*' => Http::response('<html><head><title>Acme Clinic Software</title><meta name="description" content="Booking for clinics"></head><body><script>evil()</script><p>We help clinics take bookings online.</p></body></html>', 200, ['Content-Type' => 'text/html; charset=utf-8'])]);
 
     $fields = app(WebsiteEnricher::class)->enrich($lead);
 
