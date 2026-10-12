@@ -293,7 +293,7 @@ class SubscriptionManager
             $invoice->forceFill([
                 'workspace_id' => $workspace->getKey(),
                 'plan_id' => $plan->getKey(),
-                'number' => 'TMP-'.Str::uuid(),
+                'number' => 'TMP-'.Str::random(20), // replaced with the real number below
                 'status' => InvoiceStatus::Open,
                 'interval' => $interval,
                 'description' => "{$plan->name} plan, ".strtolower($interval->getLabel()).($renewal ? ' (renewal)' : ''),
