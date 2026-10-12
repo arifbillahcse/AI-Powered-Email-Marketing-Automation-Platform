@@ -28,12 +28,40 @@ class Entitlements
         return (bool) config('billing.enabled');
     }
 
+    /**
+     * A client workspace is covered by its agency's subscription.
+     */
     public function subscription(Workspace|int $workspace): ?Subscription
     {
         return Subscription::query()
-            ->where('workspace_id', $workspace instanceof Workspace ? $workspace->getKey() : $workspace)
+            ->where('workspace_id', $this->billingWorkspaceId($workspace))
             ->with('plan')
             ->first();
+    }
+
+    /**
+     * The workspace that pays: itself, or the agency of a client workspace.
+     */
+    public function billingWorkspaceId(Workspace|int $workspace): int
+    {
+        if ($workspace instanceof Workspace) {
+            return $workspace->billingWorkspaceId();
+        }
+
+        return (int) (Workspace::query()->whereKey($workspace)->value('parent_id') ?? $workspace);
+    }
+
+    /**
+     * The agency and all its client workspaces (or just the workspace).
+     * Their mailboxes, leads and emails share the agency's plan limits.
+     *
+     * @return list<int>
+     */
+    public function familyIds(Workspace|int $workspace): array
+    {
+        $root = $this->billingWorkspaceId($workspace);
+
+        return [$root, ...Workspace::query()->where('parent_id', $root)->pluck('id')->map(fn ($id): int => (int) $id)->all()];
     }
 
     /**
@@ -72,12 +100,13 @@ class Entitlements
         $workspaceId = $workspace instanceof Workspace ? $workspace->getKey() : $workspace;
 
         return match ($key) {
-            'mailboxes' => EmailAccount::query()->where('workspace_id', $workspaceId)->count(),
-            'leads' => Lead::query()->where('workspace_id', $workspaceId)->count(),
+            'mailboxes' => EmailAccount::query()->whereIn('workspace_id', $this->familyIds($workspace))->count(),
+            'leads' => Lead::query()->whereIn('workspace_id', $this->familyIds($workspace))->count(),
             'team_members' => Membership::query()->where('workspace_id', $workspaceId)->count()
                 + WorkspaceInvitation::query()->where('workspace_id', $workspaceId)->whereNull('accepted_at')->where('expires_at', '>', now())->count(),
+            'clients' => Workspace::query()->where('parent_id', $this->billingWorkspaceId($workspace))->count(),
             'emails_per_month' => EmailMessage::query()
-                ->where('workspace_id', $workspaceId)
+                ->whereIn('workspace_id', $this->familyIds($workspace))
                 ->where('sent_at', '>=', $this->monthStart($workspace))
                 ->count(),
             default => 0,
@@ -126,6 +155,20 @@ class Entitlements
 
         if ($workspace->isSuspended()) {
             return 'This workspace is suspended'.($workspace->suspension_reason ? ": {$workspace->suspension_reason}" : '.').' Contact support.';
+        }
+
+        if ($workspace->isClient()) {
+            $agency = Workspace::query()->find($workspace->parent_id);
+
+            if ($agency?->isSuspended()) {
+                return 'Sending is paused for this workspace. Contact your agency.';
+            }
+
+            if ($agency && $this->sendingBlockedReason($agency) !== null) {
+                return 'Sending is paused for this workspace: the agency\'s plan isn\'t active or its monthly email limit is used up. Contact your agency.';
+            }
+
+            return null;
         }
 
         if (! $this->billingEnabled()) {

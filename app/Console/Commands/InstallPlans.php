@@ -31,7 +31,7 @@ class InstallPlans extends Command
             ['name' => 'Agency', 'slug' => 'agency', 'sort' => 3,
                 'description' => 'For agencies running outreach for clients.',
                 'price_monthly' => 19900, 'price_yearly' => 199000,
-                'limits' => ['mailboxes' => null, 'leads' => 250000, 'emails_per_month' => 250000, 'team_members' => null],
+                'limits' => ['mailboxes' => null, 'leads' => 250000, 'emails_per_month' => 250000, 'team_members' => null, 'clients' => 25],
                 'modules' => ['ai', 'email_verification', 'api', 'warmup', 'white_label']],
         ];
 

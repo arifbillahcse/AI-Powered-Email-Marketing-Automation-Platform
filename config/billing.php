@@ -35,6 +35,7 @@ return [
         'leads' => 500,
         'emails_per_month' => 0,
         'team_members' => 1,
+        'clients' => 0,
     ],
 
     // Printed on invoices.

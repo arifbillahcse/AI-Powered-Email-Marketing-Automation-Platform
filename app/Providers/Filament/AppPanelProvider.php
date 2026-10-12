@@ -5,7 +5,9 @@ namespace App\Providers\Filament;
 use App\Filament\App\Auth\Register;
 use App\Filament\App\Tenancy\RegisterWorkspace;
 use App\Filament\App\Tenancy\WorkspaceSettings;
+use App\Http\Middleware\ApplyBranding;
 use App\Models\Workspace;
+use App\Services\Agency\Branding;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -49,7 +51,10 @@ class AppPanelProvider extends PanelProvider
             // Suspension, trial and billing notices, and the impersonation bar.
             ->renderHook(PanelsRenderHook::PAGE_START, fn (): string => view('filament.app.account-banner')->render())
             ->databaseNotifications()
-            ->brandName(fn (): string => config('app.name'))
+            // White label: the workspace's (or custom domain's) brand.
+            ->brandName(fn (): string => app(Branding::class)->current()?->name ?? config('app.name'))
+            ->brandLogo(fn (): ?string => app(Branding::class)->current()?->logoUrl)
+            ->brandLogoHeight('2rem')
             ->colors([
                 'primary' => Color::Indigo,
                 'success' => Color::Emerald,
@@ -91,6 +96,7 @@ class AppPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                ApplyBranding::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

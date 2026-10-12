@@ -168,6 +168,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Agencies and white label (`white_label` module)
+    |--------------------------------------------------------------------------
+    |
+    | Agencies point a custom domain (app.agency.com) at this host with a
+    | CNAME, then add it as an alias/addon domain with SSL on the server.
+    |
+    */
+
+    'agency' => [
+        'domain_target' => env('CUSTOM_DOMAIN_TARGET', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        'logo_max_kb' => 512,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Inbox warmup (`warmup` module)
     |--------------------------------------------------------------------------
     |

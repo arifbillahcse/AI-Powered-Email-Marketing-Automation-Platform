@@ -43,7 +43,7 @@ return [
     'white_label' => [
         'label' => 'White Label',
         'phase' => 15,
-        'enabled' => env('MODULE_WHITE_LABEL_ENABLED', false),
+        'enabled' => env('MODULE_WHITE_LABEL_ENABLED', true),
     ],
 
 ];

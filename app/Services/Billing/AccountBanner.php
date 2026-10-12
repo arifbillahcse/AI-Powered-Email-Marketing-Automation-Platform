@@ -30,6 +30,13 @@ class AccountBanner
             return $this->banner('danger', (string) $this->entitlements->sendingBlockedReason($workspace));
         }
 
+        // Client workspaces never see the agency's billing, only a block.
+        if ($workspace->isClient()) {
+            $reason = $this->entitlements->sendingBlockedReason($workspace);
+
+            return $reason === null ? null : $this->banner('danger', $reason);
+        }
+
         if (! $this->entitlements->billingEnabled()) {
             return null;
         }

@@ -229,6 +229,15 @@ The same cron checks every mailbox for replies every 5 minutes over IMAP
 up over a few runs. Your host must allow outbound connections to your IMAP
 servers; if a mailbox can't be read, the error is saved on it.
 
+## Agencies: custom domains and client reports
+
+An agency's custom domain (`app.youragency.com`) must reach this app: in
+cPanel add it under **Domains** (or as an alias of the app's domain) with the
+same document root, and run **AutoSSL**. The agency adds the CNAME and clicks
+**Verify domain** in Workspace settings. Logos are stored on the public disk,
+so `php artisan storage:link` (step above) is required. Client report emails
+are sent by the same cron daily at 07:00 through your `MAIL_*` settings.
+
 ## Inbox warmup
 
 The same cron sends due warmup emails every 5 minutes (`warmup:send`) and

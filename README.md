@@ -100,6 +100,22 @@ sequence as `{{ai_first_line}}`, `{{ai_subject}}` or `{{ai_email}}`. Only
 approved content is ever sent: without a fallback (`{{ai_first_line|Hi}}`) a
 campaign can't launch, and a lead's email waits, until its content is approved.
 
+## Agencies and white label
+
+Settings → **Clients** (owners and admins, `white_label` module) adds a client
+workspace: separate leads, mailboxes, campaigns and Unibox, billed through
+the agency's plan and sharing its limits. Invite the client with the
+read-only Client role, or share the client's **Report** link: a branded
+results page that needs no login (replace the link any time). Report emails
+go out weekly (Mondays) or monthly (1st) to the addresses you set.
+
+Workspace settings → **Branding** sets the brand name, logo and color shown in
+the app, reports and invitation emails (client workspaces use the agency's).
+For a custom domain, add a CNAME (e.g. `app.youragency.com` →
+`CUSTOM_DOMAIN_TARGET`, by default the `APP_URL` host), add the domain to the
+server with SSL, then click **Verify domain**: the sign-in page there shows the
+agency's brand.
+
 ## Inbox warmup
 
 Infrastructure → **Warmup** (or a mailbox's Warmup tab) switches warmup on

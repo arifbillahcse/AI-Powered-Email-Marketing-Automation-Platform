@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\WorkspaceInvitation;
+use App\Services\Agency\Branding;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -33,7 +34,7 @@ class WorkspaceInvitationNotification extends Notification implements ShouldQueu
         $inviter = $this->invitation->inviter?->name ?? 'A teammate';
 
         return (new MailMessage)
-            ->subject("{$inviter} invited you to {$workspace->name} on ".config('app.name'))
+            ->subject("{$inviter} invited you to {$workspace->name} on ".app(Branding::class)->nameFor($workspace))
             ->greeting('You\'re invited!')
             ->line("{$inviter} invited you to join the **{$workspace->name}** workspace as **{$this->invitation->role->getLabel()}**.")
             ->action('Accept invitation', $this->acceptUrl())

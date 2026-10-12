@@ -23,6 +23,9 @@ Schedule::command('inbox:sync')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::command('warmup:send')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::command('warmup:sync')->everyTenMinutes()->withoutOverlapping(10);
 
+// Agencies: weekly (Mondays) and monthly (1st) client report emails.
+Schedule::command('reports:send')->dailyAt('07:00');
+
 // Shared hosting (cPanel): no long-running workers, so the cron-driven
 // scheduler works the queues for just under a minute, every minute.
 Schedule::command('queue:work', [

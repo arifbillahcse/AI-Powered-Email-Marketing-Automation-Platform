@@ -115,6 +115,14 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   (token in `X-Warmup`, one reply per message); jobs `SendWarmupEmail` (sending)
   and `ProcessWarmupInbox` (imap); `warmup:send` / `warmup:sync`. Reply detection
   ignores warmup mail
+- Agency / white label: `workspaces.parent_id` (client workspaces, one level);
+  `Entitlements` bills a client through its agency (`billingWorkspaceId()`, limits
+  pooled over `familyIds()`, `clients` limit). `Services/Agency/`: `ClientWorkspaces`
+  (create + permissions), `Branding` (`current()`: tenant or verified custom domain;
+  `ApplyBranding` middleware sets the primary color), `CustomDomainVerifier`,
+  `ClientReport` (secret link, hashed; `routes/web.php` `reports.show`; `reports:send`
+  → `SendClientReport` → `ClientReportMail`). UI: `Pages/Clients`, branding in
+  `Tenancy/WorkspaceSettings`
 - `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
   `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
   monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),

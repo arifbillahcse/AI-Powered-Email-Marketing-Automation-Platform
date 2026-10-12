@@ -63,8 +63,10 @@ class Billing extends Page implements HasTable
         $workspace = Filament::getTenant();
         $user = Auth::user();
 
+        // Client workspaces are covered by their agency's plan.
         return config('billing.enabled')
             && $workspace instanceof Workspace
+            && ! $workspace->isClient()
             && $user instanceof User
             && (bool) $user->roleIn($workspace)?->canManageTeam();
     }
@@ -105,7 +107,7 @@ class Billing extends Page implements HasTable
             Section::make('Usage')
                 ->description('Limits of your current plan.')
                 ->columns(['default' => 1, 'sm' => 2, 'lg' => 4])
-                ->schema(collect(Plan::LIMITS)->map(function (string $label, string $key) use ($entitlements, $workspace): Text {
+                ->schema(collect(Plan::LIMITS)->except($entitlements->allowsModule($workspace, 'white_label') ? [] : ['clients'])->map(function (string $label, string $key) use ($entitlements, $workspace): Text {
                     $limit = $entitlements->limit($workspace, $key);
                     $used = $entitlements->usage($workspace, $key);
                     $full = $limit !== null && $used >= $limit;
@@ -122,7 +124,7 @@ class Billing extends Page implements HasTable
                             ->compact()
                             ->schema([
                                 Text::make($plan->description ?? '')->visible(filled($plan->description)),
-                                ...collect(Plan::LIMITS)->map(fn (string $label, string $key): Text => Text::make(
+                                ...collect($plan->relevantLimits())->map(fn (string $label, string $key): Text => Text::make(
                                     ($plan->limit($key) === null ? 'Unlimited' : Number::format((int) $plan->limit($key))).' '.strtolower($label)
                                 ))->values()->all(),
                                 Text::make('Includes: '.collect($plan->modules ?? [])->map(fn (string $module): string => modules()->exists($module) ? modules()->label($module) : $module)->implode(', '))

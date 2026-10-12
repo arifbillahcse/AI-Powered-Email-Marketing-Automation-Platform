@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AcceptInvitationController;
+use App\Http\Controllers\ClientReportController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MailboxOAuthController;
@@ -12,6 +13,11 @@ Route::redirect('/', '/app');
 Route::get('/invitations/{token}', AcceptInvitationController::class)
     ->middleware('throttle:20,1')
     ->name('invitations.accept');
+
+// Read-only client reports (agencies share the secret link).
+Route::get('/reports/{token}', ClientReportController::class)
+    ->middleware('throttle:60,1')
+    ->name('reports.show');
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/billing/invoices/{invoice}', InvoiceController::class)->name('billing.invoice');

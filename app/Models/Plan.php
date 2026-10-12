@@ -23,6 +23,7 @@ class Plan extends Model
         'leads' => 'Leads',
         'emails_per_month' => 'Emails per month',
         'team_members' => 'Team members',
+        'clients' => 'Client workspaces', // agencies (white_label module)
     ];
 
     /**
@@ -91,6 +92,17 @@ class Plan extends Model
         $value = $this->limits[$key] ?? null;
 
         return $value === null || $value === '' ? null : (int) $value;
+    }
+
+    /**
+     * The limits that mean something for this plan (client workspaces
+     * only with the white label module).
+     *
+     * @return array<string, string>
+     */
+    public function relevantLimits(): array
+    {
+        return array_filter(self::LIMITS, fn (string $label, string $key): bool => $key !== 'clients' || $this->includesModule('white_label'), ARRAY_FILTER_USE_BOTH);
     }
 
     public function includesModule(string $module): bool

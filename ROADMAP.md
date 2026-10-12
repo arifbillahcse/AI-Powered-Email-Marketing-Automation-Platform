@@ -273,8 +273,27 @@ CRM, chat and sheets without manual work.
 **Done when:** a new mailbox warms itself up with no manual work and its
 inbox placement is visible.
 
-### ⬜ Phase 15: Agency and white label (`white_label` module)
-Custom domains and branding, client sub-workspaces, client reports, reseller plans.
+### ✅ Phase 15: Agency and white label (`white_label` module)
+- Client workspaces: Settings → Clients lets agency owners/admins add a
+  separate workspace per client (own leads, mailboxes, campaigns, Unibox).
+  The agency's owners/admins get access; the client can be invited with the
+  read-only Client role. One level (clients can't have clients)
+- Reseller plans: client workspaces are billed through the agency's plan and
+  share its limits (mailboxes, leads, emails per month pooled across the
+  agency and its clients); new "Client workspaces" plan limit (Agency plan:
+  25). Clients never see billing; a blocked agency pauses its clients with a
+  "contact your agency" notice
+- Branding: brand name, logo and color (Workspace settings) replace ours in
+  the panel, client reports and invitation emails; client workspaces use
+  the agency's brand
+- Custom domain: CNAME app.agency.com to the platform, verify it, and the
+  sign-in page there shows the agency's brand
+- Client reports: a secret, revocable link to a branded read-only results
+  page (7/30/90 days, KPIs and per campaign), plus weekly (Mondays) or
+  monthly (1st) report emails (`reports:send`, daily)
+
+**Done when:** an agency can run outreach for many clients under its own
+brand and show them results without giving them access to the tool.
 
 ### ⬜ Phase 16: Advanced and scale
 Inbox placement tests, multichannel steps, lead finder, dedicated workers, read replicas, event archiving.

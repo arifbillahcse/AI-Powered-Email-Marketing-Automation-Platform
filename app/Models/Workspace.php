@@ -6,6 +6,7 @@ use App\Enums\WorkspaceRole;
 use Database\Factories\WorkspaceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -32,6 +33,18 @@ class Workspace extends Model
         'state',
         'postal_code',
         'country',
+        'brand_name',
+        'brand_color',
+        'brand_logo_path',
+        'custom_domain',
+    ];
+
+    /**
+     * @var list<string>
+     */
+    protected $hidden = [
+        'report_token',
+        'report_token_hash',
     ];
 
     /**
@@ -50,12 +63,27 @@ class Workspace extends Model
         'country' => null,
         'suspended_at' => null,
         'suspension_reason' => null,
+        'parent_id' => null,
+        'brand_name' => null,
+        'brand_logo_path' => null,
+        'brand_color' => null,
+        'custom_domain' => null,
+        'custom_domain_verified_at' => null,
+        'report_token' => null,
+        'report_token_hash' => null,
+        'report_recipients' => null,
+        'report_frequency' => 'off',
+        'report_last_sent_at' => null,
     ];
 
     protected function casts(): array
     {
         return [
             'suspended_at' => 'datetime',
+            'custom_domain_verified_at' => 'datetime',
+            'report_token' => 'encrypted',
+            'report_recipients' => 'array',
+            'report_last_sent_at' => 'datetime',
         ];
     }
 
@@ -63,6 +91,13 @@ class Workspace extends Model
     {
         static::creating(function (Workspace $workspace): void {
             $workspace->slug ??= static::uniqueSlug($workspace->name);
+        });
+
+        static::saving(function (Workspace $workspace): void {
+            if ($workspace->isDirty('custom_domain')) {
+                $workspace->custom_domain = filled($workspace->custom_domain) ? Str::lower(trim((string) $workspace->custom_domain, " \t\n\r\0\x0B.")) : null;
+                $workspace->custom_domain_verified_at = null;
+            }
         });
     }
 
@@ -88,6 +123,39 @@ class Workspace extends Model
             ->as('membership')
             ->withPivot('id', 'role')
             ->withTimestamps();
+    }
+
+    /**
+     * The agency this client workspace belongs to.
+     *
+     * @return BelongsTo<Workspace, $this>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    /**
+     * Client workspaces of this agency.
+     *
+     * @return HasMany<Workspace, $this>
+     */
+    public function clients(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function isClient(): bool
+    {
+        return $this->parent_id !== null;
+    }
+
+    /**
+     * The workspace whose plan applies: the agency for a client workspace.
+     */
+    public function billingWorkspaceId(): int
+    {
+        return (int) ($this->parent_id ?? $this->getKey());
     }
 
     /**
