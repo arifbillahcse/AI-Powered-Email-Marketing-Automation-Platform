@@ -184,9 +184,26 @@ every lead's data can be exported or erased on request.
 **Done when:** a customer can sign up, trial, pay with a card or bKash, and
 be limited by their plan; the operator can run the platform from /admin.
 
-### ⬜ Phase 11: Pro mailbox and lead features
-Google + Microsoft 365 OAuth mailboxes, bulk mailbox import, email verification
-(`email_verification` module), A/B/n testing with auto-winner.
+### ✅ Phase 11: Pro mailbox and lead features
+- Google + Microsoft 365 OAuth mailboxes: "Connect Google / Microsoft 365"
+  on Email accounts; SMTP and IMAP sign in with XOAUTH2; tokens encrypted and
+  refreshed automatically; no app passwords
+- Bulk mailbox import from CSV (up to 500 per file; provider shortcuts for
+  Gmail/Microsoft/Zoho; existing addresses updated; plan limit respected;
+  each mailbox tested in the background; the file is deleted after reading)
+- Email verification (`email_verification` module, now on by default):
+  syntax, MX (or implicit A), disposable and role addresses built in;
+  MillionVerifier or ZeroBounce for mailbox-level checks. Bulk action and
+  "Verify emails" for every unchecked lead (queued batch, notification with
+  results); invalid addresses are never emailed; "Only email verified
+  leads" campaign option
+- A/B/n testing: versions B–E for any sequence email; each lead gets one
+  version (stable); results per version; automatic winner by reply, open or
+  click rate after N sends per version (`campaigns:ab-test`, every 10 min),
+  or pick one by hand; follow-ups keep the subject of the version sent
+
+**Done when:** mailboxes connect in one click or in bulk, bad addresses are
+filtered before sending, and sequences improve themselves with A/B tests.
 
 ### ⬜ Phase 12: AI reply intelligence
 Reply classification, auto-labels, AI reply drafts, website enrichment, campaign copilot.

@@ -4,6 +4,8 @@ namespace App\Services\Mail;
 
 use App\Enums\MailEncryption;
 use App\Models\EmailAccount;
+use App\Services\Mail\OAuth\MailboxOAuth;
+use Symfony\Component\Mailer\Transport\Smtp\Auth\XOAuth2Authenticator;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
 use Symfony\Component\Mailer\Transport\Smtp\Stream\SocketStream;
 use Symfony\Component\Mailer\Transport\TransportInterface;
@@ -32,7 +34,14 @@ class MailboxTransportFactory
         // STARTTLS is used automatically when offered; "none" turns it off.
         $transport->setAutoTls($account->smtp_encryption !== MailEncryption::None);
         $transport->setUsername($account->smtpUsername());
-        $transport->setPassword($account->smtp_password);
+
+        if ($account->usesOAuth()) {
+            // Google / Microsoft 365: XOAUTH2 with a fresh access token.
+            $transport->setAuthenticators([new XOAuth2Authenticator]);
+            $transport->setPassword(app(MailboxOAuth::class)->accessToken($account));
+        } else {
+            $transport->setPassword((string) $account->smtp_password);
+        }
 
         $stream = $transport->getStream();
 

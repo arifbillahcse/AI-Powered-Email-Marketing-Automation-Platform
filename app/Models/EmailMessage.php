@@ -30,6 +30,7 @@ class EmailMessage extends Model
         'replied_at' => null,
         'unsubscribed_at' => null,
         'complained_at' => null,
+        'variant' => null,
     ];
 
     protected function casts(): array

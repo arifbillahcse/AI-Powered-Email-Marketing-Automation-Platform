@@ -77,7 +77,13 @@ class EmailAccountResource extends Resource
             ->icon(Heroicon::OutlinedUser)
             ->columns(2)
             ->schema([
+                Callout::make(fn (?EmailAccount $record): string => 'Connected with '.($record?->provider === MailProvider::Microsoft ? 'Microsoft 365' : 'Google').' (OAuth)')
+                    ->description('No password is stored. If sending or reply detection stops working, reconnect to sign in again.')
+                    ->visible(fn (?EmailAccount $record): bool => (bool) $record?->usesOAuth())
+                    ->success()
+                    ->columnSpanFull(),
                 Select::make('provider')
+                    ->disabled(fn (?EmailAccount $record): bool => (bool) $record?->usesOAuth())
                     ->options(MailProvider::class)
                     ->default(MailProvider::Google->value)
                     ->required()
@@ -95,6 +101,7 @@ class EmailAccountResource extends Resource
                     ->columnSpanFull(),
                 TextInput::make('email')
                     ->label('Email address')
+                    ->disabled(fn (?EmailAccount $record): bool => (bool) $record?->usesOAuth())
                     ->email()
                     ->required()
                     ->maxLength(255)
@@ -124,6 +131,8 @@ class EmailAccountResource extends Resource
 
         return Tab::make('Servers')
             ->icon(Heroicon::OutlinedServerStack)
+            // OAuth mailboxes use the provider's servers and tokens, not passwords.
+            ->hidden(fn (?EmailAccount $record): bool => (bool) $record?->usesOAuth())
             ->schema([
                 Grid::make(3)->schema([
                     TextInput::make('smtp_host')

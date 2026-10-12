@@ -12,6 +12,9 @@ Schedule::command('horizon:snapshot')
 // below, so on shared hosting the same cron run also sends them.
 Schedule::command('campaigns:send')->everyMinute()->withoutOverlapping(5);
 
+// A/B tests: pick winners once every version has enough sends.
+Schedule::command('campaigns:ab-test')->everyTenMinutes()->withoutOverlapping(10);
+
 // Reply detection: check every mailbox for replies and bounces (imap queue).
 Schedule::command('inbox:sync')->everyFiveMinutes()->withoutOverlapping(10);
 

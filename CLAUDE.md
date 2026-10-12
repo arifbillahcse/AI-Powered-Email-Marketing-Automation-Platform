@@ -89,6 +89,15 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   `WorkspaceAlerts` (database notifications to owners/admins)
 - Auto-paused mailboxes and campaigns carry `paused_reason`; resuming clears it
   and sets `safety_reset_at` (rates only count emails sent after it)
+- Mailboxes: `Services/Mail/OAuth/MailboxOAuth` (Google/Microsoft OAuth; XOAUTH2 in
+  `MailboxTransportFactory` and `ImapClient::loginWithToken`; `auth_type = oauth`),
+  `Services/Mail/MailboxProvisioner` (OAuth connect + CSV bulk import),
+  `MailboxOAuthController` (state in session)
+- Leads: `Services/Leads/EmailVerifier` (no SMTP probing; optional API service),
+  `EmailVerification` (queued batch of `VerifyLeadEmails`); `CampaignAudience`
+  excludes invalid addresses (and non-valid with `verified_only`)
+- A/B: `Services/Campaigns/AbTesting` (step = version A, `CampaignStepVariant` = B..E,
+  `email_messages.variant`, `campaign_steps.ab_winner`; `campaigns:ab-test`)
 - `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
   `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
   monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),

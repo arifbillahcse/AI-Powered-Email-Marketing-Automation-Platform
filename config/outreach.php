@@ -116,6 +116,36 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email verification (`email_verification` module)
+    |--------------------------------------------------------------------------
+    |
+    | Built in: syntax, the domain's mail servers (MX), disposable and role
+    | addresses. Whether the mailbox itself exists needs a verification
+    | service (MillionVerifier or ZeroBounce): we never probe SMTP servers
+    | ourselves, which gets IPs blacklisted and port 25 is usually blocked.
+    |
+    */
+
+    'verification' => [
+        'provider' => env('EMAIL_VERIFICATION_PROVIDER'), // millionverifier | zerobounce | null
+        'api_key' => env('EMAIL_VERIFICATION_API_KEY'),
+        'seconds_per_job' => 35,
+        'role_accounts' => [
+            'admin', 'administrator', 'billing', 'careers', 'contact', 'enquiries', 'help', 'hello', 'hr', 'info',
+            'inquiries', 'jobs', 'marketing', 'media', 'news', 'no-reply', 'noreply', 'office', 'postmaster',
+            'press', 'privacy', 'sales', 'security', 'support', 'team', 'webmaster',
+        ],
+        'disposable_domains' => [
+            '10minutemail.com', '20minutemail.com', 'dispostable.com', 'emailondeck.com', 'fakeinbox.com',
+            'getairmail.com', 'getnada.com', 'guerrillamail.com', 'guerrillamail.net', 'mailcatch.com',
+            'maildrop.cc', 'mailinator.com', 'mailnesia.com', 'mintemail.com', 'mohmal.com', 'mytemp.email',
+            'sharklasers.com', 'spamgourmet.com', 'temp-mail.org', 'tempmail.com', 'tempmail.net',
+            'tempmailo.com', 'throwawaymail.com', 'trashmail.com', 'yopmail.com', 'yopmail.net',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Deliverability safety (auto-pause)
     |--------------------------------------------------------------------------
     |

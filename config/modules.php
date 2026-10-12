@@ -31,7 +31,7 @@ return [
     'email_verification' => [
         'label' => 'Email Verification',
         'phase' => 11,
-        'enabled' => env('MODULE_EMAIL_VERIFICATION_ENABLED', false),
+        'enabled' => env('MODULE_EMAIL_VERIFICATION_ENABLED', true),
     ],
 
     'white_label' => [

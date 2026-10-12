@@ -9,6 +9,7 @@ use App\Filament\App\Resources\Campaigns\Pages\ListCampaigns;
 use App\Filament\App\Resources\Campaigns\RelationManagers\CampaignLeadsRelationManager;
 use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Models\Campaign;
+use App\Models\CampaignStepVariant;
 use App\Models\EmailAccount;
 use App\Services\Campaigns\CampaignAudience;
 use App\Services\Campaigns\CampaignMessageBuilder;
@@ -21,6 +22,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
@@ -31,6 +33,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Text;
@@ -136,7 +139,43 @@ class CampaignResource extends Resource
                             ->live(onBlur: true),
                         Text::make(fn (Get $get): string => app(SpamChecker::class)->summary($get('subject'), static::editorHtml($get('body'))))
                             ->color(fn (Get $get): string => app(SpamChecker::class)->check($get('subject'), static::editorHtml($get('body')))['color']),
+                        static::variantsRepeater(),
+                        Select::make('ab_winner')
+                            ->label('A/B winner')
+                            ->placeholder('Keep testing')
+                            ->helperText('Once set, every lead gets this version. Picked automatically when the test is decided (Options tab).')
+                            ->options(fn (Get $get): array => collect(['A', ...collect($get('variants') ?? [])->pluck('label')->filter()->all()])
+                                ->mapWithKeys(fn (string $label): array => [$label => "Version {$label}"])->all())
+                            ->visible(fn (Get $get): bool => filled($get('variants'))),
                     ]),
+            ]);
+    }
+
+    /**
+     * Versions B, C, ... of one sequence email, for A/B/n testing.
+     */
+    protected static function variantsRepeater(): Repeater
+    {
+        return Repeater::make('variants')
+            ->label('A/B test versions')
+            ->helperText('The email above is version A. Each lead gets one version; compare them in "A/B results".')
+            ->relationship()
+            ->defaultItems(0)
+            ->maxItems(count(CampaignStepVariant::LABELS))
+            ->addActionLabel('Add a version to test')
+            ->collapsible()
+            ->collapsed()
+            ->itemLabel(fn (array $state): string => 'Version '.($state['label'] ?? 'new').(filled($state['subject'] ?? null) ? ': '.$state['subject'] : ''))
+            ->schema([
+                // Assigned on save (B, C, ...); kept in state for labels and the winner picker.
+                Hidden::make('label')->dehydrated(false),
+                TextInput::make('subject')
+                    ->placeholder('Same subject as version A')
+                    ->maxLength(255),
+                RichEditor::make('body')
+                    ->hiddenLabel()
+                    ->required()
+                    ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']]),
             ]);
     }
 
@@ -275,6 +314,32 @@ class CampaignResource extends Resource
                     ->label('Send as plain text')
                     ->helperText('Plain-text emails look personal and often land in the primary inbox.')
                     ->live(),
+                Toggle::make('verified_only')
+                    ->label('Only email verified leads')
+                    ->helperText('Skips leads whose address isn\'t verified as valid (Leads → Verify emails). Invalid addresses are always skipped.'),
+                Section::make('A/B testing')
+                    ->description('Add versions B, C… to any email in the sequence. Each lead gets one version; the winner can be picked automatically.')
+                    ->compact()
+                    ->columns(3)
+                    ->schema([
+                        Toggle::make('ab_auto_winner')
+                            ->label('Pick the winner automatically')
+                            ->default(true)
+                            ->columnSpanFull(),
+                        Select::make('ab_metric')
+                            ->label('Winner by')
+                            ->options(['reply' => 'Reply rate', 'open' => 'Open rate (needs open tracking)', 'click' => 'Click rate (needs click tracking)'])
+                            ->default('reply')
+                            ->required(),
+                        TextInput::make('ab_min_sends')
+                            ->label('After this many sends per version')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(10)
+                            ->maxValue(10_000)
+                            ->default(100)
+                            ->required(),
+                    ]),
             ]);
     }
 

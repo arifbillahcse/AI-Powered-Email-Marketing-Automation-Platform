@@ -8,9 +8,11 @@ use App\Filament\App\Resources\AiGenerations\AiGenerationResource;
 use App\Filament\App\Resources\AiPromptTemplates\AiPromptTemplateResource;
 use App\Models\AiPromptTemplate;
 use App\Models\Campaign;
+use App\Models\CampaignStepVariant;
 use App\Models\Lead;
 use App\Services\Ai\AiGenerationService;
 use App\Services\Billing\Entitlements;
+use App\Services\Campaigns\AbTesting;
 use App\Services\Campaigns\CampaignAudience;
 use App\Services\Campaigns\CampaignCloner;
 use App\Services\Campaigns\CampaignLauncher;
@@ -127,6 +129,49 @@ class CampaignActions
                 }
 
                 Notification::make()->title('Campaign launched')->body(Number::format($enrolled).' leads enrolled.')->success()->send();
+            });
+    }
+
+    /**
+     * Sent, opened, clicked and replied per version of every A/B-tested email.
+     */
+    public static function abResults(): Action
+    {
+        return Action::make('abResults')
+            ->label('A/B results')
+            ->icon(Heroicon::OutlinedChartBar)
+            ->color('gray')
+            ->visible(fn (Campaign $record): bool => CampaignStepVariant::query()->whereIn('campaign_step_id', $record->steps()->select('id'))->exists())
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Close')
+            ->modalContent(function (Campaign $record): HtmlString {
+                $testing = app(AbTesting::class);
+                $html = '';
+
+                foreach ($testing->results($record) as $result) {
+                    $step = $result['step'];
+                    $rows = '';
+
+                    foreach ($result['versions'] as $label => $version) {
+                        $winner = $step->ab_winner === $label ? ' <strong>(winner)</strong>' : '';
+                        $rows .= '<tr><td style="padding:.375rem .5rem;">'.e("Version {$label}").$winner.'</td>'
+                            .collect([$version['sent'], $version['opened'], $version['clicked'], $version['replied'], "{$version['rate']}%"])
+                                ->map(fn ($value): string => '<td style="padding:.375rem .5rem; text-align:end;">'.e((string) $value).'</td>')->implode('')
+                            .'</tr>';
+                    }
+
+                    $html .= '<p style="margin:.75rem 0 .25rem; font-weight:600;">'.e("Email {$step->position}".($step->subject ? ": {$step->subject}" : '')).'</p>'
+                        .'<table style="width:100%; font-size:.875rem; border-collapse:collapse;"><thead><tr>'
+                        .collect(['Version', 'Sent', 'Opened', 'Clicked', 'Replied', ucfirst($testing->metricLabel($record))])
+                            ->map(fn (string $heading, int $i): string => '<th style="padding:.375rem .5rem; text-align:'.($i === 0 ? 'start' : 'end').';">'.e($heading).'</th>')->implode('')
+                        .'</tr></thead><tbody>'.$rows.'</tbody></table>';
+                }
+
+                $rule = $record->ab_auto_winner
+                    ? 'The best '.$testing->metricLabel($record).' wins automatically once every version has '.$record->ab_min_sends.' sends.'
+                    : 'Automatic winners are off: pick one per email in the sequence editor.';
+
+                return new HtmlString('<div>'.$html.'<p style="margin-top:.75rem; font-size:.875rem; opacity:.75;">'.e($rule).'</p></div>');
             });
     }
 

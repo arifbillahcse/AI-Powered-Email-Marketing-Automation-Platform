@@ -8,6 +8,7 @@ use App\Services\Mail\HostGuard;
 use App\Services\Mail\Imap\ImapClient;
 use App\Services\Mail\Imap\ImapConnector;
 use App\Services\Mail\MailboxConnectionException;
+use App\Services\Mail\OAuth\MailboxOAuth;
 use Carbon\CarbonImmutable;
 use Throwable;
 
@@ -40,7 +41,9 @@ class InboxSynchronizer
         $imported = 0;
 
         try {
-            $client->login($mailbox->imap_encryption, $mailbox->imapUsername(), $mailbox->imapPassword());
+            $mailbox->usesOAuth()
+                ? $client->loginWithToken($mailbox->imap_encryption, $mailbox->imapUsername(), app(MailboxOAuth::class)->accessToken($mailbox))
+                : $client->login($mailbox->imap_encryption, $mailbox->imapUsername(), $mailbox->imapPassword());
             $folder = $client->select('INBOX');
 
             foreach ($this->pendingUids($client, $mailbox, $folder) as $uid) {

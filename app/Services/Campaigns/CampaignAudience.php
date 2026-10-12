@@ -2,13 +2,15 @@
 
 namespace App\Services\Campaigns;
 
+use App\Enums\EmailVerificationStatus;
 use App\Models\Campaign;
 use App\Models\Lead;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
  * The leads a campaign targets: everyone in any of its lists or segments,
- * minus anyone on the suppression list.
+ * minus anyone on the suppression list and addresses verification found
+ * invalid (or, with "verified only", everyone not verified as valid).
  */
 class CampaignAudience
 {
@@ -36,7 +38,14 @@ class CampaignAudience
                     $audience->orWhereIn('leads.id', $segment->leadsQuery()->select('leads.id'));
                 }
             })
-            ->whereNotSuppressed();
+            ->whereNotSuppressed()
+            ->when(
+                $campaign->verified_only,
+                fn (Builder $query) => $query->where('leads.verification_status', EmailVerificationStatus::Valid->value),
+                fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                    ->whereNull('leads.verification_status')
+                    ->orWhere('leads.verification_status', '!=', EmailVerificationStatus::Invalid->value)),
+            );
     }
 
     public function count(Campaign $campaign): int

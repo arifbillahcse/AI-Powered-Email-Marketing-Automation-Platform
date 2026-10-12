@@ -152,6 +152,35 @@ match the event log exactly. **Export CSV** downloads any breakdown.
   personal data" (owners/admins), which deletes everything and keeps only
   the address on the suppression list.
 
+## Mailboxes: OAuth and bulk import
+
+- **Connect Google / Microsoft 365** (Email accounts) signs in with OAuth: no
+  app passwords. Create an OAuth app and set `GOOGLE_MAIL_CLIENT_ID/SECRET`
+  and/or `MICROSOFT_MAIL_CLIENT_ID/SECRET` (redirect URI:
+  `{APP_URL}/mailboxes/oauth/google/callback` or `.../microsoft/callback`).
+  Google needs the `https://mail.google.com/` scope; Microsoft needs
+  `SMTP.Send` and `IMAP.AccessAsUser.All` (Office 365 Exchange Online).
+- **Add mailbox → Bulk import (CSV)**: columns `email, from_name, smtp_host,
+  smtp_port, smtp_encryption, smtp_username, smtp_password, imap_host,
+  imap_port, imap_encryption, imap_username, imap_password, daily_limit` (or
+  `provider` = google / microsoft / zoho instead of the servers).
+
+## Email verification
+
+Leads → **Verify emails** checks unchecked leads (or select some and use the
+bulk action): syntax, mail server, disposable and role addresses. For
+mailbox-level checks set `EMAIL_VERIFICATION_PROVIDER` (millionverifier or
+zerobounce) and `EMAIL_VERIFICATION_API_KEY`. Invalid addresses are never
+emailed; a campaign can also send only to verified leads (Options tab).
+
+## A/B testing
+
+In the sequence editor, "Add a version to test" under any email (up to
+versions B–E). Each lead gets one version; **A/B results** on the campaign
+compares them. With "Pick the winner automatically" (Options tab), the best
+reply / open / click rate wins once every version has the set number of
+sends, and every later lead gets the winner.
+
 ## Billing (SaaS mode)
 
 Off by default: a self-hosted or custom-built install has no plans or limits.

@@ -4,6 +4,7 @@ namespace App\Services\Mail;
 
 use App\Models\EmailAccount;
 use App\Services\Mail\Imap\ImapProbe;
+use App\Services\Mail\OAuth\MailboxOAuth;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport\Smtp\SmtpTransport;
 
@@ -66,7 +67,8 @@ class MailboxConnectionTester
                 $account->imap_port,
                 $account->imap_encryption,
                 $account->imapUsername(),
-                $account->imapPassword(),
+                $account->usesOAuth() ? app(MailboxOAuth::class)->accessToken($account) : $account->imapPassword(),
+                oauth: $account->usesOAuth(),
             );
         } catch (MailboxConnectionException $exception) {
             return $exception->getMessage();

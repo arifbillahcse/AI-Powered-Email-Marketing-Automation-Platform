@@ -58,6 +58,8 @@ class EmailAccount extends Model
     protected $hidden = [
         'smtp_password',
         'imap_password',
+        'oauth_access_token',
+        'oauth_refresh_token',
     ];
 
     /**
@@ -88,6 +90,11 @@ class EmailAccount extends Model
         'imap_error' => null,
         'paused_reason' => null,
         'safety_reset_at' => null,
+        'auth_type' => 'password',
+        'smtp_password' => null,
+        'oauth_access_token' => null,
+        'oauth_refresh_token' => null,
+        'oauth_expires_at' => null,
     ];
 
     protected function casts(): array
@@ -114,6 +121,9 @@ class EmailAccount extends Model
             'warmup_started_at' => 'datetime',
             'next_send_at' => 'datetime',
             'safety_reset_at' => 'datetime',
+            'oauth_access_token' => 'encrypted',
+            'oauth_refresh_token' => 'encrypted',
+            'oauth_expires_at' => 'datetime',
         ];
     }
 
@@ -186,7 +196,15 @@ class EmailAccount extends Model
 
     public function imapPassword(): string
     {
-        return $this->imap_password ?: $this->smtp_password;
+        return (string) ($this->imap_password ?: $this->smtp_password);
+    }
+
+    /**
+     * Connected with Google / Microsoft OAuth (XOAUTH2) instead of a password.
+     */
+    public function usesOAuth(): bool
+    {
+        return $this->auth_type === 'oauth';
     }
 
     public function isActive(): bool

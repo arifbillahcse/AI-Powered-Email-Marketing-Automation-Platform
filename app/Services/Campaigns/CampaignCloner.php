@@ -20,6 +20,7 @@ class CampaignCloner
             $copy = new Campaign($source->only([
                 'timezone', 'send_days', 'send_window_start', 'send_window_end', 'daily_limit',
                 'stop_on_reply', 'track_opens', 'track_clicks', 'plain_text',
+                'verified_only', 'ab_auto_winner', 'ab_metric', 'ab_min_sends',
             ]));
             $copy->name = $name;
             $copy->workspace_id = $source->workspace_id;
@@ -28,8 +29,13 @@ class CampaignCloner
             $copy->created_by = $by?->getKey();
             $copy->save();
 
-            foreach ($source->steps()->get() as $step) {
-                $copy->steps()->create($step->only(['position', 'delay_days', 'subject', 'body']));
+            foreach ($source->steps()->with('variants')->get() as $step) {
+                $newStep = $copy->steps()->create($step->only(['position', 'delay_days', 'subject', 'body']));
+
+                // A/B versions come along; the test starts over (no winner).
+                foreach ($step->variants as $variant) {
+                    $newStep->variants()->create($variant->only(['label', 'subject', 'body']));
+                }
             }
 
             if (! $asTemplate && ! $source->is_template) {

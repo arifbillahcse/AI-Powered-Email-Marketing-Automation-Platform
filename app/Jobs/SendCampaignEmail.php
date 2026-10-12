@@ -6,6 +6,7 @@ use App\Enums\CampaignLeadStatus;
 use App\Enums\CampaignStatus;
 use App\Enums\EmailEventType;
 use App\Enums\EmailMessageStatus;
+use App\Enums\EmailVerificationStatus;
 use App\Enums\LeadActivityType;
 use App\Enums\LeadStatus;
 use App\Models\CampaignLead;
@@ -13,6 +14,7 @@ use App\Models\CampaignStep;
 use App\Models\EmailAccount;
 use App\Models\EmailMessage;
 use App\Services\Billing\Entitlements;
+use App\Services\Campaigns\AbTesting;
 use App\Services\Campaigns\CampaignMessageBuilder;
 use App\Services\Leads\SuppressionList;
 use App\Services\Mail\MailboxConnectionException;
@@ -104,8 +106,8 @@ class SendCampaignEmail implements ShouldQueue
             return;
         }
 
-        // Last-moment compliance check.
-        if ($suppressions->isSuppressed($lead->workspace_id, $lead->email)) {
+        // Last-moment compliance check (and never an address verified as invalid).
+        if ($suppressions->isSuppressed($lead->workspace_id, $lead->email) || $lead->verification_status === EmailVerificationStatus::Invalid) {
             $campaignLead->forceFill(['status' => CampaignLeadStatus::Stopped, 'next_send_at' => null])->save();
 
             return;
@@ -136,6 +138,13 @@ class SendCampaignEmail implements ShouldQueue
             'message_id' => Str::uuid()->toString().'@'.$mailbox->domain(),
         ]);
 
+        // A/B testing: this lead's version of the step (A when there are none).
+        $version = app(AbTesting::class)->pick($step, $campaignLead->getKey());
+        $message->forceFill(['variant' => $version['label']]);
+        $sendStep = clone $step;
+        $sendStep->subject = $version['subject'];
+        $sendStep->body = $version['body'];
+
         try {
             $message->save();
         } catch (UniqueConstraintViolationException) {
@@ -143,7 +152,7 @@ class SendCampaignEmail implements ShouldQueue
         }
 
         $unsubscribeUrl = $urls->unsubscribe($mailbox, $message->token);
-        $content = $builder->build($campaign, $step, $lead, $mailbox, $unsubscribeUrl);
+        $content = $builder->build($campaign, $sendStep, $lead, $mailbox, $unsubscribeUrl);
 
         // AI content used without a fallback but not approved for this lead
         // yet: never send a half-empty email. Check again later.
@@ -184,6 +193,14 @@ class SendCampaignEmail implements ShouldQueue
 
         if ($content['reply_in_thread']) {
             $previous = $campaignLead->messages()->whereNotNull('sent_at')->pluck('message_id')->filter()->values()->all();
+
+            // Keep the subject of the version of email 1 this lead actually got.
+            $firstSubject = $campaignLead->messages()->where('step_position', 1)->whereNotNull('sent_at')->value('subject');
+
+            if (filled($firstSubject)) {
+                $email->subject(str_starts_with(strtolower($firstSubject), 're:') ? $firstSubject : "Re: {$firstSubject}");
+                $message->forceFill(['subject' => mb_substr((string) $email->getSubject(), 0, 255)])->save();
+            }
 
             if ($previous !== []) {
                 $headers->addIdHeader('In-Reply-To', end($previous));

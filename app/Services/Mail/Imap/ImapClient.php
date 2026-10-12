@@ -38,6 +38,36 @@ class ImapClient
     }
 
     /**
+     * Sign in with an OAuth access token (Gmail, Microsoft 365).
+     */
+    public function loginWithToken(MailEncryption $encryption, string $username, #[\SensitiveParameter] string $accessToken): void
+    {
+        $greeting = $this->stream->readLine();
+
+        if (! str_starts_with($greeting, '* OK') && ! str_starts_with($greeting, '* PREAUTH')) {
+            throw new MailboxConnectionException('Unexpected IMAP server greeting.');
+        }
+
+        if ($encryption === MailEncryption::Tls) {
+            $this->command('STARTTLS', 'The IMAP server doesn\'t support STARTTLS. Try SSL/TLS on port 993.');
+            $this->stream->enableTls();
+        }
+
+        $this->command(
+            'AUTHENTICATE XOAUTH2 '.self::xoauth2($username, $accessToken),
+            'IMAP sign-in with OAuth failed. Reconnect the mailbox.',
+        );
+    }
+
+    /**
+     * The SASL XOAUTH2 initial response.
+     */
+    public static function xoauth2(string $username, #[\SensitiveParameter] string $accessToken): string
+    {
+        return base64_encode("user={$username}\x01auth=Bearer {$accessToken}\x01\x01");
+    }
+
+    /**
      * @return array{uid_validity: ?int, uid_next: ?int, exists: int}
      */
     public function select(string $folder = 'INBOX'): array
@@ -129,6 +159,14 @@ class ImapClient
                 }
 
                 throw new MailboxConnectionException($failureMessage);
+            }
+
+            // A failed XOAUTH2 sends a "+" challenge with the error; answer
+            // with an empty line to get the tagged NO.
+            if (str_starts_with($line, '+')) {
+                $this->stream->write('');
+
+                continue;
             }
 
             $literal = null;

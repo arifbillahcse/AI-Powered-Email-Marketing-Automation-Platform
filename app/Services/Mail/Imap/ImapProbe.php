@@ -15,7 +15,7 @@ class ImapProbe
         protected ImapConnector $connector,
     ) {}
 
-    public function check(string $host, int $port, MailEncryption $encryption, string $username, #[\SensitiveParameter] string $password): void
+    public function check(string $host, int $port, MailEncryption $encryption, string $username, #[\SensitiveParameter] string $password, bool $oauth = false): void
     {
         $stream = $this->connector->connect($host, $port, $encryption);
 
@@ -31,12 +31,14 @@ class ImapProbe
                 $stream->enableTls();
             }
 
-            $this->command(
-                $stream,
-                'A1',
-                'LOGIN '.$this->quote($username).' '.$this->quote($password),
-                'IMAP login failed. Check the username and password (many providers need an app password).',
-            );
+            $oauth
+                ? $this->command($stream, 'A1', 'AUTHENTICATE XOAUTH2 '.ImapClient::xoauth2($username, $password), 'IMAP sign-in with OAuth failed. Reconnect the mailbox.')
+                : $this->command(
+                    $stream,
+                    'A1',
+                    'LOGIN '.$this->quote($username).' '.$this->quote($password),
+                    'IMAP login failed. Check the username and password (many providers need an app password).',
+                );
 
             $stream->write('A2 LOGOUT');
         } finally {
@@ -56,6 +58,11 @@ class ImapProbe
 
             if (str_starts_with($line, "{$tag} OK")) {
                 return;
+            }
+
+            // A failed XOAUTH2 sends a "+" challenge first; answer it to get the NO.
+            if (str_starts_with($line, '+')) {
+                $stream->write('');
             }
 
             if (str_starts_with($line, "{$tag} NO") || str_starts_with($line, "{$tag} BAD")) {

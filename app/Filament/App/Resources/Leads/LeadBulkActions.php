@@ -6,6 +6,8 @@ use App\Enums\LeadStatus;
 use App\Enums\SuppressionReason;
 use App\Models\Lead;
 use App\Models\LeadList;
+use App\Services\Billing\Entitlements;
+use App\Services\Leads\EmailVerification;
 use App\Services\Leads\LeadBulkOperations;
 use App\Services\Leads\SuppressionList;
 use Filament\Actions\BulkAction;
@@ -36,6 +38,7 @@ class LeadBulkActions
             static::addTags(),
             static::removeTags(),
             static::setStatus(),
+            static::verify(),
             static::suppress(),
             static::delete(),
         ];
@@ -57,6 +60,24 @@ class LeadBulkActions
     protected static function done(string $title): void
     {
         Notification::make()->title($title)->success()->send();
+    }
+
+    public static function verify(): BulkAction
+    {
+        $locked = fn (): bool => ! app(Entitlements::class)->allowsModule(static::workspaceId(), 'email_verification');
+
+        return static::base('verifyEmails')
+            ->label('Verify emails')
+            ->icon(Heroicon::OutlinedCheckBadge)
+            ->disabled($locked)
+            ->tooltip(fn (): ?string => $locked() ? 'Email verification isn\'t included in your plan.' : null)
+            ->requiresConfirmation()
+            ->modalDescription('Checks each address in the background (syntax, mail server, disposable and role addresses). You\'ll get a notification with the results.')
+            ->action(function (Builder $query): void {
+                $count = app(EmailVerification::class)->queue(static::workspaceId(), $query, Auth::user());
+
+                static::done('Verifying '.Number::format($count).' '.str('lead')->plural($count));
+            });
     }
 
     public static function addToList(): BulkAction

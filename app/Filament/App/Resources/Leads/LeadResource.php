@@ -2,6 +2,7 @@
 
 namespace App\Filament\App\Resources\Leads;
 
+use App\Enums\EmailVerificationStatus;
 use App\Enums\LeadStatus;
 use App\Filament\App\Actions\SendLeadEmailAction;
 use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
@@ -198,6 +199,12 @@ class LeadResource extends Resource
                 TextColumn::make('status')
                     ->badge()
                     ->sortable(),
+                TextColumn::make('verification_status')
+                    ->label('Email check')
+                    ->badge()
+                    ->tooltip(fn (Lead $record): ?string => $record->verification_reason)
+                    ->placeholder('Not checked')
+                    ->toggleable(),
                 TextColumn::make('tags.name')
                     ->label('Tags')
                     ->badge()
@@ -218,6 +225,14 @@ class LeadResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')->options(LeadStatus::class)->multiple(),
+                SelectFilter::make('verification_status')
+                    ->label('Email check')
+                    ->options([...collect(EmailVerificationStatus::cases())->mapWithKeys(fn (EmailVerificationStatus $status): array => [$status->value => $status->getLabel()])->all(), 'none' => 'Not checked'])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        null, '' => $query,
+                        'none' => $query->whereNull('verification_status'),
+                        default => $query->where('verification_status', $data['value']),
+                    }),
                 SelectFilter::make('lists')
                     ->relationship('lists', 'name', fn (Builder $query) => $query->where('lead_lists.workspace_id', static::workspaceId()))
                     ->multiple()

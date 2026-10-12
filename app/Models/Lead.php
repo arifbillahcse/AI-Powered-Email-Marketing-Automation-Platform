@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EmailVerificationStatus;
 use App\Enums\LeadActivityType;
 use App\Enums\LeadStatus;
 use App\Enums\SuppressionType;
@@ -56,6 +57,9 @@ class Lead extends Model
         'status' => 'new',
         'source' => 'manual',
         'last_contacted_at' => null,
+        'verification_status' => null,
+        'verification_reason' => null,
+        'verified_at' => null,
     ];
 
     protected function casts(): array
@@ -64,6 +68,8 @@ class Lead extends Model
             'custom_fields' => 'array',
             'status' => LeadStatus::class,
             'last_contacted_at' => 'datetime',
+            'verification_status' => EmailVerificationStatus::class,
+            'verified_at' => 'datetime',
         ];
     }
 

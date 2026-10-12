@@ -30,6 +30,10 @@ class Campaign extends Model
         'track_opens',
         'track_clicks',
         'plain_text',
+        'verified_only',
+        'ab_auto_winner',
+        'ab_metric',
+        'ab_min_sends',
     ];
 
     /**
@@ -49,6 +53,10 @@ class Campaign extends Model
         'completed_at' => null,
         'paused_reason' => null,
         'safety_reset_at' => null,
+        'verified_only' => false,
+        'ab_auto_winner' => true,
+        'ab_metric' => 'reply',
+        'ab_min_sends' => 100,
     ];
 
     protected function casts(): array
@@ -66,6 +74,9 @@ class Campaign extends Model
             'paused_at' => 'datetime',
             'completed_at' => 'datetime',
             'safety_reset_at' => 'datetime',
+            'verified_only' => 'boolean',
+            'ab_auto_winner' => 'boolean',
+            'ab_min_sends' => 'integer',
         ];
     }
 
