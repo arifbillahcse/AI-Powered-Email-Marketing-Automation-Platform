@@ -71,7 +71,10 @@ hosting (no Redis, no Node.js, no long-running processes).
 
 ### Replies and insights
 - **Unibox:** every reply from every mailbox, out-of-office detection,
-  threaded replies from the original mailbox, one-off emails to any lead.
+  threaded replies from the original mailbox.
+- **Write to one lead:** a one-click composer on every lead (smart mailbox
+  choice, greeting typed, Ctrl+Enter to send) with reusable **message
+  templates**.
 - **Analytics:** sent, open, click, reply, bounce and unsubscribe rates,
   daily chart, breakdowns per campaign, step and mailbox, mailbox health
   scores, CSV export.

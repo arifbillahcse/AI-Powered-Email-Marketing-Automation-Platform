@@ -262,8 +262,9 @@ class LeadResource extends Resource
             ->emptyStateHeading('No leads yet')
             ->emptyStateDescription('Import a CSV or add leads one by one.')
             ->recordActions([
+                // One click to write to a lead while scrolling the list.
+                SendLeadEmailAction::make()->iconButton()->tooltip('Write email'),
                 ActionGroup::make([
-                    SendLeadEmailAction::make(),
                     ViewAction::make(),
                     EditAction::make(),
                     DeleteAction::make(),

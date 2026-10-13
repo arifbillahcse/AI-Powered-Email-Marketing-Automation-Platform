@@ -64,7 +64,8 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   campaign-related mail is stored), `ParsedEmail` (MIME via
   zbateson/mail-mime-parser), `AutoReplyDetector`, `InboxReplier` (Unibox
   replies, and `compose()` for one-off emails to a lead: a thread with no
-  campaign; UI in `Filament/App/Actions/SendLeadEmailAction.php`)
+  campaign; UI in `Filament/App/Actions/SendLeadEmailAction.php`: "Write email",
+  default mailbox, greeting, `MessageTemplate` picker / save, Ctrl+Enter)
 - `app/Models/InboxThread.php` (one Unibox conversation per campaign lead) and
   `InboxMessage` (plain-text bodies; never render email HTML)
 - `app/Jobs/SyncMailboxInbox.php` (`imap` queue, every 5 min via `inbox:sync`),

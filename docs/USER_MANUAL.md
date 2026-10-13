@@ -104,7 +104,7 @@ codes somewhere safe.
 
 - **Left sidebar:** the main menu, in four groups:
   - **Outreach:** Unibox, Campaigns, Leads, Lead finder, Lists, AI review,
-    AI prompts, Tasks, Segments, Suppression list.
+    AI prompts, Message templates, Tasks, Segments, Suppression list.
   - **Infrastructure:** Email accounts, Domains, Warmup, Inbox placement.
   - **Insights:** Analytics.
   - **Settings:** Clients (agencies), Billing, Team, AI settings,
@@ -314,10 +314,39 @@ Open a lead to see its details, lists, tags and a **timeline** of everything
 that happened: created, imported, emails sent, opened, clicked, replied,
 bounced, tasks done, status changes. From here you can:
 
-- **Send email:** a one-off email outside any campaign. Pick the mailbox,
-  write the subject and message (variables and spintax work). It starts a
-  Unibox conversation, so the reply lands there.
+- **Write email:** a personal one-off email outside any campaign. See
+  *Writing to one lead* below.
 - **Export personal data / Erase personal data:** see [2.20](#220-privacy-requests-gdpr).
+
+### Writing to one lead
+
+When you spot a lead worth a personal message, write to them in a few
+seconds:
+
+1. Click the **envelope icon** on the lead's row in the leads table, or
+   **Write email** at the top of the lead's page.
+2. The composer is ready:
+   - **From** is already chosen: the mailbox that last emailed this lead,
+     otherwise the one you used last.
+   - The message starts with `Hi {{first_name|there}},` and your mailbox
+     signature is added when sending.
+   - The top line tells you when the lead was last contacted and the latest
+     message between you, so you don't repeat yourself.
+3. Optionally pick a **Template**: its subject and message fill in; change a
+   line to make it personal.
+4. Press **Ctrl+Enter** (⌘+Enter on Mac) or click **Send email**.
+
+It goes out within a minute from that mailbox (campaign schedules and limits
+don't apply) and starts a Unibox conversation, so the reply lands there. The
+lead's timeline shows "Email sent", and a New lead becomes Contacted.
+Suppressed leads and paused or failing mailboxes are refused.
+
+**Message templates** (Outreach → Message templates) are the short emails
+you send often, e.g. "Intro: web development" or "Hosting offer". Create them
+there, or tick **Save as a message template** in the composer to keep what
+you just wrote. Variables (`{{first_name|there}}`, `{{company}}`,
+`{{website}}`, `{{sender_first_name}}`...) are filled in for each lead. The
+most used templates are listed first.
 
 ### Email verification
 

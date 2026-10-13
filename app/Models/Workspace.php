@@ -272,6 +272,14 @@ class Workspace extends Model
     }
 
     /**
+     * @return HasMany<MessageTemplate, $this>
+     */
+    public function messageTemplates(): HasMany
+    {
+        return $this->hasMany(MessageTemplate::class);
+    }
+
+    /**
      * @return HasMany<AiPromptTemplate, $this>
      */
     public function aiPromptTemplates(): HasMany
