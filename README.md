@@ -1,16 +1,109 @@
 # AI-Powered Email Marketing Automation Platform
 
-Cold email outreach platform with AI personalization, in the spirit of Instantly.ai:
-connect mailboxes, import leads, run multi-step sequences with per-inbox throttling,
-personalize with AI, and manage replies from one inbox.
+A complete cold email outreach platform in the spirit of Instantly.ai: connect
+unlimited mailboxes, warm them up, find and import leads, run multi-step
+(and multichannel) sequences at a safe pace, personalize with AI, and handle
+every reply from one inbox. Sell it as a SaaS with plans and payments, or run
+it white-labelled for agency clients.
 
-Built with **Laravel 12**, **Filament 5**, **PostgreSQL**, **Redis** and **Horizon**.
-See [ROADMAP.md](ROADMAP.md) for the phase-by-phase build plan and
-[docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) for the design system.
+Built with **Laravel 12**, **Filament 5**, **PHP 8.4**, **PostgreSQL / MySQL**,
+**Redis** and **Horizon**. Runs on a VPS (Docker) **and** on cPanel shared
+hosting (no Redis, no Node.js, no long-running processes).
 
-**Operating manual:** [docs/USER_MANUAL.md](docs/USER_MANUAL.md) covers every
-screen for users, agencies and the platform owner, plus server operations and
-troubleshooting.
+| Document | What's in it |
+|---|---|
+| **[docs/USER_MANUAL.md](docs/USER_MANUAL.md)** | The operating manual: every screen for users, agencies and the platform owner, server operations, troubleshooting |
+| [docs/DEPLOY_CPANEL.md](docs/DEPLOY_CPANEL.md) | Step-by-step deployment on cPanel / shared hosting |
+| [docs/API.md](docs/API.md) | REST API v1 and signed webhooks |
+| [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) | Colors, typography and UI rules |
+| [ROADMAP.md](ROADMAP.md) | The build plan, phase by phase (all 18 phases complete) |
+| [CLAUDE.md](CLAUDE.md) | Code layout and conventions for contributors |
+
+---
+
+## Features
+
+### Sending infrastructure
+- **Mailboxes:** Google and Microsoft 365 sign-in (OAuth, no app passwords),
+  any SMTP/IMAP server, Zoho presets, and CSV bulk import. Per-mailbox daily
+  limit, random gap between emails, sending window, signature and custom
+  tracking domain.
+- **Domain health:** MX, SPF, DKIM and DMARC checks with copy-paste fixes,
+  plus daily blacklist (DNSBL) monitoring.
+- **Inbox warmup:** a warmup pool that exchanges natural emails, rescues them
+  from spam, files them in a Warmup folder and replies; ramps up 2 a day to
+  the target and reports a 7-day inbox rate per mailbox.
+- **Inbox placement tests:** send a test to seed inboxes and see inbox, spam
+  or missing per provider.
+
+### Leads
+- CSV and Excel import in the background (custom fields become
+  `{{variables}}`), lists, rule-based segments, tags, activity timeline,
+  bulk actions on any selection size, export.
+- **Email verification** (built-in checks, optional MillionVerifier or
+  ZeroBounce) and a **lead finder** (Hunter.io domain search).
+- **AI enrichment** from each lead's website.
+- Suppression list (emails and domains) fed automatically by unsubscribes,
+  bounces and spam complaints.
+
+### Campaigns
+- Multi-step sequences with follow-ups in the same thread, `{{variables|fallbacks}}`
+  and `{spin|tax}`, a spam checker, preview per lead and test sends.
+- **Multichannel steps:** LinkedIn (view, connect, message), call and custom
+  tasks that pause the sequence until done.
+- **A/B/n testing** (versions A–E) with automatic winner selection.
+- **Template library** of ready-made sequences, your own templates, and an
+  **AI copilot** that writes a sequence from a brief.
+- Sending engine: inbox rotation, sticky mailbox per lead, campaign and
+  mailbox windows in their time zones, daily caps, never a step sent twice,
+  and plain-language **Sending status** when a campaign isn't sending.
+- Compliance built in: unsubscribe link, RFC 8058 one-click
+  `List-Unsubscribe`, postal address footer, suppression re-checked right
+  before every send.
+
+### AI
+- **AI personalization:** first lines, subjects or whole emails per lead, with
+  a review queue (only approved content is sent).
+- **Reply intelligence:** replies sorted (interested, meeting, not now...),
+  summarized, leads auto-labelled, and AI-drafted answers.
+- Included platform credits (Claude via the official Anthropic SDK) or
+  bring-your-own Anthropic / OpenAI key, with token usage tracking.
+
+### Replies and insights
+- **Unibox:** every reply from every mailbox, out-of-office detection,
+  threaded replies from the original mailbox, one-off emails to any lead.
+- **Analytics:** sent, open, click, reply, bounce and unsubscribe rates,
+  daily chart, breakdowns per campaign, step and mailbox, mailbox health
+  scores, CSV export.
+- **Deliverability safety:** auto-pause of mailboxes and campaigns on high
+  bounce or complaint rates, spam-complaint (ARF) processing, GDPR export and
+  erasure per lead.
+
+### Teams, agencies and integrations
+- Workspaces with Owner, Admin, Member and read-only Client roles,
+  invitations and two-factor authentication.
+- **Agency / white label:** client workspaces on the agency's plan, own
+  brand name, logo, color and custom domain, and branded client report links
+  and scheduled report emails.
+- **REST API** with scoped keys, and integrations: signed webhooks (Zapier,
+  Make, n8n), Slack, Telegram, HubSpot, Pipedrive, Google Sheets.
+
+### SaaS business
+- Plans with limits and modules, free trials, invoices, renewals, grace
+  periods; payments by **Stripe**, **SSLCommerz**, **bKash** or bank transfer
+  (always re-verified with the gateway).
+- **Super admin panel** (`/admin`): plans, workspaces, users (impersonate,
+  suspend), invoices, abuse watch, dedicated sending, system health.
+- Public **website**: landing page, pricing from your plans, help center,
+  terms, privacy and sitemap. Dashboard onboarding checklist and a demo
+  account generator for sales demos.
+
+### Scale
+- Horizon worker pools per workload, a dedicated `sending-priority` queue for
+  big senders, read replicas (`DB_READ_HOST`), and archiving of old tracking
+  events to compressed files.
+
+---
 
 ## Quick start (Docker)
 
@@ -26,12 +119,13 @@ docker compose exec app npm run build
 
 | URL | What |
 |---|---|
-| http://localhost:8000/app | Customer app (seeded below) |
-| http://localhost:8000/admin | Super admin (seeded: `admin@example.com` / `password`) |
+| http://localhost:8000 | Public website (landing, pricing, help) |
+| http://localhost:8000/app | Customer app |
+| http://localhost:8000/admin | Super admin panel |
 | http://localhost:8000/horizon | Queue dashboard (super admins) |
 | http://localhost:8025 | Mailpit (catches all local email) |
 
-Seeded accounts (password `password` for all):
+Seeded accounts (password `password`):
 
 | Email | Role |
 |---|---|
@@ -40,325 +134,134 @@ Seeded accounts (password `password` for all):
 | `client@example.com` | Client (view-only) in "Demo Agency" |
 | `admin@example.com` | Platform super admin (`/admin`) |
 
-Create a real super admin with `php artisan app:create-super-admin`.
-
-## Workspaces and roles
-
-Every customer works inside a **workspace** (`/app/{workspace}`), and can belong
-to several and switch between them from the sidebar menu.
-
-| Role | Can do |
-|---|---|
-| Owner | Everything. Can't be removed or leave. |
-| Admin | Manage team, roles and workspace settings, plus everything a Member can |
-| Member | Run campaigns, manage leads, reply |
-| Client | View only |
-
-## Campaigns
-
-Outreach → **Campaigns**: write a multi-step sequence (follow-ups can reply in
-the same thread), personalise with `{{first_name|there}}` and spintax like
-`{Hi|Hello}`, pick the audience (lists and/or segments, suppressed leads are
-always excluded), the mailboxes to rotate across, the schedule (time zone,
-days, window, daily cap) and options (stop on reply, open/click tracking,
-plain text). **Preview** shows the exact email any lead will get. **Launch**
-checks everything first (sequence, active mailbox, mailing address, audience)
-and enrolls the leads. Campaigns can be paused, resumed, stopped, duplicated
-or saved as templates.
-
-## Sending
-
-Each campaign has a schedule (days and hours in a time zone), and each
-mailbox has its own window (open all day by default). Emails go out only
-when both are open. If an active campaign isn't sending, its page says why
-(⚠ at the top, and **Sending status** lists every check).
-
-Every minute `campaigns:send` (scheduled) picks one due lead per available
-mailbox and queues the email on the `sending` queue. It honours each mailbox's
-daily limit, random gap and send window, the campaign's daily cap, days, hours
-and time zone, keeps each lead on the same mailbox, and never emails anyone on
-the suppression list. Follow-ups reply in the same thread.
-
-Every email has a `Message-ID`, an unsubscribe link and RFC 8058 one-click
-`List-Unsubscribe` headers. Opens (pixel) and clicks (signed redirects) are
-tracked when enabled. A rejected address is a hard bounce and is suppressed;
-a refused login flags the mailbox; other errors retry 15 minutes later.
-Campaign pages show sent/opened/clicked/bounced/unsubscribed counts and where
-each lead is in the sequence.
-
-## AI personalization
-
-Settings → **AI settings** (owners and admins): use the included Claude
-credits (`ANTHROPIC_API_KEY` on the server, a monthly token allowance per
-workspace) or the workspace's own Anthropic or OpenAI key, stored encrypted.
-Claude defaults to Opus 5.5 at low effort with server-side refusal fallback;
-Sonnet 5.5 and Haiku 4.5 are cheaper options. The page shows this month's
-token usage and estimated cost.
-
-Outreach → **AI prompts** holds reusable instructions (what you sell, to whom)
-with tone, language and length. On a campaign, **AI personalize** writes a
-first line, subject or whole email for every lead in the audience in the
-background (`ai` queue). Outreach → **AI review** lists the results: approve,
-edit, reject or regenerate them, one by one or in bulk. Use the content in the
-sequence as `{{ai_first_line}}`, `{{ai_subject}}` or `{{ai_email}}`. Only
-approved content is ever sent: without a fallback (`{{ai_first_line|Hi}}`) a
-campaign can't launch, and a lead's email waits, until its content is approved.
-
-## Public website and demo
-
-`/` is a landing page with features, `/pricing` lists the active plans,
-`/help` is the help center (edit the Markdown in `resources/help`), plus
-`/terms`, `/privacy` and `/sitemap.xml`. Set the company details with the
-`MARKETING_*` variables, or `MARKETING_SITE_ENABLED=false` to open the app at
-`/`. New workspaces get a "Get started" checklist on the dashboard, and
-Campaigns → **Template library** starts a campaign from a ready-made sequence.
-
-For sales demos: `php artisan app:demo --email=demo@yourdomain.com
---password=...` creates a workspace full of sample data (`--fresh` rebuilds it).
-
-## Multichannel, placement tests and lead finder
-
-- **Multichannel steps**: in a campaign's sequence, pick a step type: email,
-  LinkedIn (view profile, connection request, message), phone call or other
-  task. Manual steps become tasks in Outreach → **Tasks**; the lead's sequence
-  continues once a task is marked done or skipped.
-- **Inbox placement**: Infrastructure → **Inbox placement** sends a test email
-  to seed inboxes and shows inbox / spam / missing per provider. Seeds are the
-  mailboxes of the workspace named in `PLACEMENT_SEED_WORKSPACE` (connect Gmail,
-  Outlook, Yahoo... accounts there), plus optionally the customer's own.
-- **Lead finder**: Outreach → **Lead finder** finds people and work emails at
-  company domains (Hunter.io, `HUNTER_API_KEY`) and adds them to a list.
-
-## Scaling
-
-- Horizon pools per workload (`HORIZON_*_PROCESSES`); Super admin → Workspaces
-  → **Dedicated sending** moves a big sender to the `sending-priority` queue.
-- `DB_READ_HOST` adds read replicas.
-- `events:archive` moves raw open/click events older than
-  `ARCHIVE_EVENTS_AFTER_DAYS` to `storage/app/private/archives/email-events/`.
-
-## Agencies and white label
-
-Settings → **Clients** (owners and admins, `white_label` module) adds a client
-workspace: separate leads, mailboxes, campaigns and Unibox, billed through
-the agency's plan and sharing its limits. Invite the client with the
-read-only Client role, or share the client's **Report** link: a branded
-results page that needs no login (replace the link any time). Report emails
-go out weekly (Mondays) or monthly (1st) to the addresses you set.
-
-Workspace settings → **Branding** sets the brand name, logo and color shown in
-the app, reports and invitation emails (client workspaces use the agency's).
-For a custom domain, add a CNAME (e.g. `app.youragency.com` →
-`CUSTOM_DOMAIN_TARGET`, by default the `APP_URL` host), add the domain to the
-server with SSL, then click **Verify domain**: the sign-in page there shows the
-agency's brand.
-
-## Inbox warmup
-
-Infrastructure → **Warmup** (or a mailbox's Warmup tab) switches warmup on
-per mailbox. Warmup mailboxes email each other short, natural conversations:
-2 a day at first, 2 more every day, up to the mailbox's target. The
-recipient's inbox is checked over IMAP: warmup emails are rescued from spam,
-marked read, filed in a "Warmup" folder and answered at the mailbox's reply
-rate. The page shows each mailbox's inbox rate (share of delivered warmup
-emails that landed in the inbox) over the last 7 days. The pool spans all
-workspaces by default; set `WARMUP_POOL=workspace` to keep each customer's
-mailboxes to themselves (then a workspace needs mailboxes on at least two
-domains).
-
-## Unibox
-
-Outreach → **Unibox** collects replies from every connected mailbox. Every
-5 minutes `inbox:sync` checks each mailbox over IMAP (read-only: nothing is
-marked read or moved) and imports only replies to your campaign emails,
-matched by their `In-Reply-To`/`References` headers or by the sender being a
-lead that mailbox emailed. Your other mail is never stored.
-
-A real reply stops the lead's sequence (when the campaign's "stop on reply"
-is on) and marks the lead Replied. Out-of-office replies are detected by
-their headers and subject, shown with a badge (hidden by default) and don't
-stop anything. Bounce emails suppress hard-bounced addresses. Open a
-conversation to read it, label the lead (Interested, Meeting booked, Not
-interested, Closed) and reply: the reply goes out from the original mailbox
-in the same thread.
-
-To email one lead outside any campaign, use **Send email** on the lead (its
-page, or the row menu in Leads). Pick the mailbox, write a subject and
-message (`{{variables}}` and spintax work), and it goes out within a minute,
-ignoring campaign schedules and limits. It starts a Unibox conversation
-("One-off email"), so the lead's reply lands there. Suppressed leads and
-paused or failing mailboxes are refused.
-
-## Analytics
-
-Insights → **Analytics** shows sent, open, click, reply, bounce and
-unsubscribe rates for any period (in your workspace's time zone), a daily
-activity chart, and breakdowns per campaign, per email of a sequence and per
-mailbox. Each mailbox gets an inbox health score (0–100) with the reasons
-it lost points. Rates are a share of the emails sent in the period, so they
-match the event log exactly. **Export CSV** downloads any breakdown.
-
-## Deliverability safety
-
-- **Auto-pause.** When a mailbox's or campaign's bounce rate goes over 5%, or
-  its spam-complaint rate over 0.3% (last 7 days, after at least 20 emails),
-  it is paused automatically. The reason shows on the mailbox, the campaign
-  and in "Sending status", and owners/admins get a notification. Resuming
-  starts the count again. Limits: `AUTO_PAUSE_BOUNCE_RATE`,
-  `AUTO_PAUSE_COMPLAINT_RATE`, `AUTO_PAUSE_ENABLED`.
-- **Spam complaints.** Feedback-loop reports (ARF) that arrive in a connected
-  mailbox suppress the lead and count towards the complaint rate.
-- **Spam check.** Every email in the sequence editor shows a 0–100 score;
-  "Spam check" on an email lists what to change.
-- **Blacklists.** Domains → each domain is checked daily against Spamhaus,
-  SURBL, URIBL, and its mail servers' IPs against Spamhaus ZEN, SpamCop,
-  Barracuda and PSBL. "Check blacklists" runs it now. Spamhaus refuses
-  queries from big public DNS resolvers: those show as "couldn't check".
-- **GDPR.** On a lead: Privacy → "Download personal data" (JSON) or "Erase
-  personal data" (owners/admins), which deletes everything and keeps only
-  the address on the suppression list.
-
-## API and integrations
-
-- **REST API** (`/api/v1`, see [docs/API.md](docs/API.md)): create keys in
-  Settings → API keys.
-- **Settings → Integrations**: webhooks (Zapier, Make, n8n; signed), Slack,
-  Telegram, HubSpot, Pipedrive and Google Sheets, triggered by email sent /
-  opened / clicked / bounced, replies, interested replies and unsubscribes.
-
-## AI reply intelligence
-
-With AI set up (AI settings), every new reply is sorted (interested, wants a
-meeting, question, not now, not interested, wrong person, unsubscribe
-request), summarized in one line, and the lead is labelled automatically
-(labels you set by hand are kept). "Remove me" replies unsubscribe the lead.
-Replies worth answering get an AI draft: **Reply** opens with it filled in.
-Add "About your company" and a booking link in AI settings for better drafts.
-
-- Leads → select → **Enrich from website (AI)** adds `{{company_summary}}`,
-  `{{industry}}` and `{{personalization_hook}}` from each lead's website.
-- Campaign → **Write with AI** writes a whole sequence from a short brief
-  (draft campaigns).
-
-## Mailboxes: OAuth and bulk import
-
-- **Connect Google / Microsoft 365** (Email accounts) signs in with OAuth: no
-  app passwords. Create an OAuth app and set `GOOGLE_MAIL_CLIENT_ID/SECRET`
-  and/or `MICROSOFT_MAIL_CLIENT_ID/SECRET` (redirect URI:
-  `{APP_URL}/mailboxes/oauth/google/callback` or `.../microsoft/callback`).
-  Google needs the `https://mail.google.com/` scope; Microsoft needs
-  `SMTP.Send` and `IMAP.AccessAsUser.All` (Office 365 Exchange Online).
-- **Add mailbox → Bulk import (CSV)**: columns `email, from_name, smtp_host,
-  smtp_port, smtp_encryption, smtp_username, smtp_password, imap_host,
-  imap_port, imap_encryption, imap_username, imap_password, daily_limit` (or
-  `provider` = google / microsoft / zoho instead of the servers).
-
-## Email verification
-
-Leads → **Verify emails** checks unchecked leads (or select some and use the
-bulk action): syntax, mail server, disposable and role addresses. For
-mailbox-level checks set `EMAIL_VERIFICATION_PROVIDER` (millionverifier or
-zerobounce) and `EMAIL_VERIFICATION_API_KEY`. Invalid addresses are never
-emailed; a campaign can also send only to verified leads (Options tab).
-
-## A/B testing
-
-In the sequence editor, "Add a version to test" under any email (up to
-versions B–E). Each lead gets one version; **A/B results** on the campaign
-compares them. With "Pick the winner automatically" (Options tab), the best
-reply / open / click rate wins once every version has the set number of
-sends, and every later lead gets the winner.
-
-## Billing (SaaS mode)
-
-Off by default: a self-hosted or custom-built install has no plans or limits.
-To sell workspaces on plans:
-
-1. Set `BILLING_ENABLED=true` and configure at least one payment method in
-   `.env`: Stripe (`STRIPE_*`), SSLCommerz (`SSLCOMMERZ_*`), bKash
-   (`BKASH_*`) or bank transfer (`BILLING_MANUAL_*`, on by default).
-2. `php artisan billing:install-plans` creates Starter / Growth / Agency;
-   edit prices, limits and included modules in **/admin → Plans**. The
-   "trial plan" is what new workspaces start a free trial on.
-3. Customers see **Settings → Billing**: plan, usage, plans, invoices, and
-   pay with the methods you enabled. bKash and SSLCommerz charge in BDT
-   (`BILLING_USD_TO_BDT`). Bank transfers are confirmed in **/admin →
-   Invoices**.
-
-Webhooks: Stripe → `https://your-app/billing/webhook/stripe`
-(`checkout.session.completed`), SSLCommerz IPN →
-`https://your-app/billing/webhook/sslcommerz`. Payments are always
-re-verified with the gateway before an invoice is marked paid.
-
-## Super admin
-
-`/admin` (create the account with `php artisan app:create-super-admin`):
-plans, workspaces (plan, usage, abuse risk, suspend), users (log in as,
-suspend), invoices, and **System health** (cron, queue, cache, disk,
-mailboxes, blacklists, billing).
-
-## Leads
-
-Outreach → **Leads** imports CSV or Excel (.xlsx) files in the background (100-row chunks, so it
-also works on shared hosting): map columns, add everything to a list, tag it,
-and keep unmapped columns as custom fields usable as `{{variables}}`.
-Duplicates are merged by email. Leads can be filtered by status, list, tag,
-segment or suppression, changed in bulk, exported to CSV/XLSX, and each one
-has an activity timeline.
-
-**Lists** group leads, **Segments** are saved rule-based filters (e.g. "list is
-SaaS founders AND tag is hot"), and the **Suppression list** holds emails or
-whole domains that are never emailed. Unsubscribes and spam complaints can't
-be removed from it.
-
-## Email accounts and domains
-
-Infrastructure → **Email accounts** connects mailboxes over SMTP/IMAP (Google,
-Microsoft 365 and Zoho presets, or any custom server). Saving runs a connection
-test; "Send test email" sends a real message and reports back in the bell menu.
-Each mailbox has its own daily limit, random gap between emails, send window
-and days, signature and optional custom tracking domain.
-
-Infrastructure → **Domains** checks MX, SPF, DKIM and DMARC for every sending
-domain (daily, and on demand) and shows copy-paste DNS records to fix problems.
-
-Locally, the seeded mailbox sends through Mailpit. Mailpit has no IMAP, so its
-connection test reports an IMAP error; that's expected.
-
-Invitations are emailed (queued) and expire after 7 days. Users can turn on
-two-factor authentication (authenticator app + recovery codes) from their profile.
-
-## Deploying on cPanel / shared hosting
-
-No Docker, Redis or Node.js needed: see **[docs/DEPLOY_CPANEL.md](docs/DEPLOY_CPANEL.md)**.
-GitHub Actions builds a ready-to-upload zip (Actions → "Package for cPanel").
+The seeded mailbox sends through Mailpit. Mailpit has no IMAP, so its
+connection test reports an IMAP error; that's expected locally.
 
 ## Quick start (without Docker)
 
-Requires PHP 8.4 (pdo_pgsql, redis, intl, zip, gd, bcmath), Composer, Node 22,
-PostgreSQL 16 and Redis 7.
+Requires PHP 8.4 (pdo_pgsql or pdo_mysql, intl, zip, gd, bcmath), Composer,
+Node 22, PostgreSQL 16 (or MySQL 8) and Redis 7 (used by Horizon in `composer dev`).
 
 ```bash
 composer install && npm install
 cp .env.example .env && php artisan key:generate
 php artisan migrate --seed
-composer dev   # server + horizon + logs + vite
+composer dev   # server + Horizon + logs + vite
 ```
 
-## Tests and code style
+## Deploying to production
+
+- **cPanel / shared hosting:** follow [docs/DEPLOY_CPANEL.md](docs/DEPLOY_CPANEL.md).
+  GitHub Actions builds a ready-to-upload zip (Actions → "Package for cPanel").
+  One cron job runs everything:
+
+  ```bash
+  * * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
+  ```
+
+- **VPS:** PostgreSQL + Redis, `php artisan horizon` under Supervisor, plus
+  the same cron. See Part 5 of the [manual](docs/USER_MANUAL.md#part-5-server-operations).
+
+After the first deploy:
 
 ```bash
-composer test        # Pest
-composer lint        # Pint (fix)
+php artisan migrate --force
+php artisan storage:link
+php artisan optimize
+php artisan app:create-super-admin          # your /admin account
+php artisan billing:install-plans           # sample plans (SaaS mode)
+php artisan app:demo --email=demo@yourdomain.com --password='...'   # optional demo account
 ```
 
-## Feature modules
+Updating later:
 
-Optional features are toggled in `.env` (see `config/modules.php`):
+```bash
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan optimize:clear && php artisan optimize
+```
+
+---
+
+## Configuration essentials
+
+All settings live in `.env` (full reference in
+[Appendix A of the manual](docs/USER_MANUAL.md#appendix-a-settings-reference-env)).
+
+| Area | Key settings |
+|---|---|
+| App | `APP_URL`, `APP_ENV=production`, `APP_DEBUG=false` |
+| Database | `DB_CONNECTION` (`pgsql` or `mysql`), `DB_*`, optional `DB_READ_HOST` |
+| Queues | `QUEUE_CONNECTION` (`database` on cPanel, `redis` on VPS) |
+| System email | `MAIL_*` (invitations, password resets, client reports) |
+| Mailbox sign-in | `GOOGLE_MAIL_CLIENT_ID/SECRET`, `MICROSOFT_MAIL_CLIENT_ID/SECRET/TENANT` |
+| AI | `ANTHROPIC_API_KEY`, `AI_PLATFORM_MODEL`, `AI_PLATFORM_MONTHLY_TOKENS` |
+| Data services | `EMAIL_VERIFICATION_PROVIDER/API_KEY`, `HUNTER_API_KEY`, `PLACEMENT_SEED_WORKSPACE` |
+| Billing | `BILLING_ENABLED`, `STRIPE_*`, `SSLCOMMERZ_*`, `BKASH_*`, `BILLING_MANUAL_*` |
+| Website | `MARKETING_SITE_ENABLED`, `MARKETING_COMPANY`, `MARKETING_CONTACT_EMAIL` |
+| Deliverability | `AUTO_PAUSE_*`, `TRACKING_CNAME_TARGET`, `WARMUP_POOL` |
+
+**Billing is off by default:** a self-hosted or custom-built install has no
+plans or limits. Set `BILLING_ENABLED=true` to sell workspaces on plans.
+
+### Feature modules
+
+Optional features can be switched off for everyone (and, with billing on,
+included per plan):
 
 ```env
-MODULE_WARMUP_ENABLED=false
+MODULE_AI_ENABLED=true
+MODULE_API_ENABLED=true
+MODULE_WARMUP_ENABLED=true
+MODULE_EMAIL_VERIFICATION_ENABLED=true
+MODULE_WHITE_LABEL_ENABLED=true
+MODULE_MULTICHANNEL_ENABLED=true
+MODULE_INBOX_PLACEMENT_ENABLED=true
+MODULE_LEAD_FINDER_ENABLED=true
 ```
+
+A disabled module stays visible as locked ("Soon") rather than hidden.
+
+---
+
+## How it works
+
+```
+Mailboxes ──► Warmup pool ──► reputation
+Leads ──► Lists / Segments ──► Campaign audience
+                                   │
+Every minute: campaigns:send ──► picks one due lead per available mailbox
+                                   │   (windows, limits, gaps, suppression)
+                                   ▼
+                     sending queue ──► SMTP (mailbox's own server)
+                                   │   tracking pixel / links / unsubscribe
+Every 5 minutes: inbox:sync ──► IMAP ──► replies, bounces, complaints
+                                   ▼
+                     Unibox + AI reply intelligence ──► integrations / API
+```
+
+Scheduled jobs (all from the one cron): sending every minute, reply sync and
+warmup every 5–10 minutes, A/B decisions and placement checks, nightly DNS and
+blacklist checks, daily client reports, hourly billing and event archiving.
+See [Appendix B of the manual](docs/USER_MANUAL.md#appendix-b-scheduled-jobs-and-queues).
+
+Queues: `sending-priority`, `sending`, `imap`, `default`, `ai`, `imports`.
+
+---
+
+## Development
+
+```bash
+composer test         # Pest test suite (PostgreSQL or MySQL)
+composer lint         # Pint (fix code style)
+composer test:lint    # Pint check, as in CI
+```
+
+- Tests need PostgreSQL or MySQL (`DB_CONNECTION=pgsql` / `mysql`); some
+  queries use syntax SQLite doesn't support.
+- CI runs the full suite on **both PostgreSQL and MySQL** on every push.
+- Code layout, conventions and rules for new features: [CLAUDE.md](CLAUDE.md).
 
 ## License
 
