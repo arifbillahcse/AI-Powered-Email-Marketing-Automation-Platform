@@ -8,6 +8,10 @@ Built with **Laravel 12**, **Filament 5**, **PostgreSQL**, **Redis** and **Horiz
 See [ROADMAP.md](ROADMAP.md) for the phase-by-phase build plan and
 [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) for the design system.
 
+**Operating manual:** [docs/USER_MANUAL.md](docs/USER_MANUAL.md) covers every
+screen for users, agencies and the platform owner, plus server operations and
+troubleshooting.
+
 ## Quick start (Docker)
 
 ```bash
