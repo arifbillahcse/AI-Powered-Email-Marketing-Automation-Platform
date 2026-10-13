@@ -183,6 +183,60 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Inbox placement tests (`inbox_placement` module)
+    |--------------------------------------------------------------------------
+    |
+    | Seeds are mailboxes you control at the big providers (Gmail, Outlook,
+    | Yahoo, ...). Connect them in one workspace and set its slug or id in
+    | PLACEMENT_SEED_WORKSPACE. Customers can also test against their own
+    | other mailboxes. Results are read over IMAP (read-only).
+    |
+    */
+
+    'placement' => [
+        'seed_workspace' => env('PLACEMENT_SEED_WORKSPACE'),
+        'header' => 'X-Placement',
+        'max_seeds' => 25,
+        'wait_minutes' => 30, // not found by then = missing
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lead finder (`lead_finder` module)
+    |--------------------------------------------------------------------------
+    |
+    | Finds people's work emails at a company domain through Hunter.io's
+    | domain search. The platform's key is used for every workspace.
+    |
+    */
+
+    'lead_finder' => [
+        'api_key' => env('HUNTER_API_KEY'),
+        'max_domains' => 25,
+        'max_per_domain' => 100,
+        'min_confidence' => 50,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event archiving
+    |--------------------------------------------------------------------------
+    |
+    | Raw open/click events older than this move to gzipped JSON-lines files
+    | (storage/app/private/archives/email-events/YYYY-MM.jsonl.gz) and leave
+    | the database. Analytics read email_messages, so nothing changes in the
+    | app. 0 turns archiving off.
+    |
+    */
+
+    'archive' => [
+        'events_after_days' => (int) env('ARCHIVE_EVENTS_AFTER_DAYS', 180),
+        'seconds_per_run' => 40,
+        'chunk' => 2000,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Inbox warmup (`warmup` module)
     |--------------------------------------------------------------------------
     |
@@ -313,7 +367,7 @@ return [
         // long-running workers); Redis setups use Horizon instead.
         'run_from_scheduler' => (bool) env('QUEUE_RUN_FROM_SCHEDULER', env('QUEUE_CONNECTION', 'database') === 'database'),
         // Highest priority first.
-        'queues' => 'sending,imap,default,ai,imports',
+        'queues' => 'sending-priority,sending,imap,default,ai,imports',
     ],
 
 ];

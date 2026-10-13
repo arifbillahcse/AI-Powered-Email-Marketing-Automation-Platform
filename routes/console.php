@@ -23,6 +23,12 @@ Schedule::command('inbox:sync')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::command('warmup:send')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::command('warmup:sync')->everyTenMinutes()->withoutOverlapping(10);
 
+// Inbox placement tests: look for test emails in the seed mailboxes.
+Schedule::command('placement:check')->everyFiveMinutes()->withoutOverlapping(10);
+
+// Archive raw open/click events older than ARCHIVE_EVENTS_AFTER_DAYS.
+Schedule::command('events:archive')->hourly()->withoutOverlapping(30);
+
 // Agencies: weekly (Mondays) and monthly (1st) client report emails.
 Schedule::command('reports:send')->dailyAt('07:00');
 

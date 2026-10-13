@@ -6,6 +6,7 @@ use App\Enums\CampaignLeadStatus;
 use App\Enums\CampaignStatus;
 use App\Enums\EmailAccountStatus;
 use App\Enums\EmailMessageStatus;
+use App\Enums\StepType;
 use App\Jobs\SendCampaignEmail;
 use App\Models\Campaign;
 use App\Models\CampaignLead;
@@ -13,8 +14,10 @@ use App\Models\EmailAccount;
 use App\Models\EmailMessage;
 use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\CampaignLauncher;
+use App\Services\Campaigns\CampaignTasks;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +36,7 @@ class SendScheduler
     public function __construct(
         protected CampaignLauncher $launcher,
         protected Entitlements $entitlements,
+        protected CampaignTasks $tasks,
     ) {}
 
     /**
@@ -61,6 +65,9 @@ class SendScheduler
 
         $this->stopSuppressedLeads($campaigns);
         $campaigns = $this->completeFinished($campaigns);
+
+        // Multichannel: leads due for a manual step get a task and wait.
+        $this->tasks->createDue($campaigns, $now);
 
         // Campaigns inside their window, with how many more they may send today.
         $remaining = [];
@@ -122,7 +129,8 @@ class SendScheduler
                 'next_send_at' => $now->copy()->addSeconds(random_int($mailbox->min_delay_seconds, max($mailbox->min_delay_seconds, $mailbox->max_delay_seconds))),
             ])->save();
 
-            SendCampaignEmail::dispatch($campaignLead->getKey(), $mailbox->getKey(), $campaignLead->steps_sent + 1);
+            SendCampaignEmail::dispatch($campaignLead->getKey(), $mailbox->getKey(), $campaignLead->steps_sent + 1)
+                ->onQueue($mailbox->workspace->sendingQueue());
 
             $remaining[$campaignLead->campaign_id]--;
             $workspaceId = $workspaceOf[$campaignLead->campaign_id];
@@ -172,6 +180,11 @@ class SendScheduler
                 ->orWhere('email_account_id', $mailbox->getKey())
                 ->orWhereNotIn('email_account_id', $activeMailboxIds))
             ->whereHas('lead', fn (Builder $lead) => $lead->whereNotSuppressed())
+            ->whereNotExists(fn (QueryBuilder $query) => $query->select(DB::raw(1))
+                ->from('campaign_steps')
+                ->whereColumn('campaign_steps.campaign_id', 'campaign_leads.campaign_id')
+                ->whereRaw('campaign_steps.position = campaign_leads.steps_sent + 1')
+                ->where('campaign_steps.type', '!=', StepType::Email->value))
             ->orderBy('next_send_at')
             ->orderBy('id')
             ->limit(5)

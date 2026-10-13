@@ -20,6 +20,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -80,6 +81,7 @@ class WorkspaceResource extends Resource
                 TextColumn::make('email_accounts_count')->label('Mailboxes')->sortable(),
                 TextColumn::make('leads_count')->label('Leads')->formatStateUsing(fn ($state): string => Number::format((int) $state))->sortable(),
                 TextColumn::make('memberships_count')->label('Members'),
+                IconColumn::make('dedicated_sending')->label('Dedicated')->boolean()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('risk')
                     ->label('Bounce / complaints (7d)')
                     ->state(function (Workspace $record): ?string {
@@ -117,6 +119,17 @@ class WorkspaceResource extends Resource
             ->recordActions([
                 ActionGroup::make([
                     static::setPlanAction(),
+                    Action::make('dedicatedSending')
+                        ->label(fn (Workspace $record): string => $record->dedicated_sending ? 'Use shared sending' : 'Dedicated sending')
+                        ->icon(Heroicon::OutlinedBolt)
+                        ->modalDescription(fn (Workspace $record): string => $record->dedicated_sending
+                            ? 'Campaign emails go back to the shared "sending" queue.'
+                            : 'Campaign emails go to the "sending-priority" queue, worked by its own Horizon supervisor, so other workspaces\' volume never delays them.')
+                        ->requiresConfirmation()
+                        ->action(function (Workspace $record): void {
+                            $record->forceFill(['dedicated_sending' => ! $record->dedicated_sending])->save();
+                            Notification::make()->title($record->dedicated_sending ? "{$record->name} now has dedicated sending" : "{$record->name} uses shared sending")->success()->send();
+                        }),
                     static::suspendAction(),
                     Action::make('unsuspend')
                         ->label('Unsuspend')

@@ -27,12 +27,12 @@ class InstallPlans extends Command
                 'description' => 'For teams scaling outreach across many inboxes.',
                 'price_monthly' => 7900, 'price_yearly' => 79000,
                 'limits' => ['mailboxes' => 15, 'leads' => 50000, 'emails_per_month' => 50000, 'team_members' => 5],
-                'modules' => ['ai', 'email_verification', 'api']],
+                'modules' => ['ai', 'email_verification', 'api', 'multichannel', 'inbox_placement']],
             ['name' => 'Agency', 'slug' => 'agency', 'sort' => 3,
                 'description' => 'For agencies running outreach for clients.',
                 'price_monthly' => 19900, 'price_yearly' => 199000,
                 'limits' => ['mailboxes' => null, 'leads' => 250000, 'emails_per_month' => 250000, 'team_members' => null, 'clients' => 25],
-                'modules' => ['ai', 'email_verification', 'api', 'warmup', 'white_label']],
+                'modules' => ['ai', 'email_verification', 'api', 'warmup', 'white_label', 'multichannel', 'inbox_placement', 'lead_finder']],
         ];
 
         $created = 0;

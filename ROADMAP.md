@@ -295,5 +295,31 @@ inbox placement is visible.
 **Done when:** an agency can run outreach for many clients under its own
 brand and show them results without giving them access to the tool.
 
-### ⬜ Phase 16: Advanced and scale
-Inbox placement tests, multichannel steps, lead finder, dedicated workers, read replicas, event archiving.
+### ✅ Phase 16: Advanced and scale
+- Multichannel steps (`multichannel` module): a sequence step can be an
+  email or a manual LinkedIn (view profile, connection request, message),
+  call or other task. A lead reaching one gets a task in Outreach → Tasks
+  (title and notes with variables, LinkedIn link, phone) and its sequence
+  waits until the task is done or skipped
+- Inbox placement tests (`inbox_placement`): send a test from a mailbox to
+  seed inboxes (a platform seed workspace, `PLACEMENT_SEED_WORKSPACE`, and
+  optionally your own mailboxes), then read them over IMAP (read-only) for
+  inbox / spam / missing per provider; notification when done
+  (`placement:check`, every 5 minutes)
+- Lead finder (`lead_finder`): people and work emails at company domains
+  (Hunter.io domain search, confidence threshold), filtered by department
+  and seniority, added to a list in the background (one job per domain);
+  existing leads only join the list, suppressed addresses are skipped, plan
+  lead limits apply
+- Dedicated workers: Horizon supervisor per workload with env-tunable sizes,
+  plus a `sending-priority` queue for workspaces switched to dedicated
+  sending by a super admin
+- Read replicas: `DB_READ_HOST` (comma-separated) sends reads to replicas,
+  sticky after writes (PostgreSQL, MySQL, MariaDB)
+- Event archiving: raw email events older than `ARCHIVE_EVENTS_AFTER_DAYS`
+  (default 180) move to gzipped JSON-lines files per month and leave the
+  database (`events:archive`, hourly, time-boxed); analytics are unaffected
+
+**Done when:** sequences reach leads beyond email, deliverability can be
+measured before sending, and the platform scales past one database and
+one worker pool.

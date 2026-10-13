@@ -4,6 +4,7 @@ namespace App\Filament\App\Resources\Campaigns;
 
 use App\Enums\AiContentType;
 use App\Enums\CampaignStatus;
+use App\Enums\StepType;
 use App\Filament\App\Resources\AiGenerations\AiGenerationResource;
 use App\Filament\App\Resources\AiPromptTemplates\AiPromptTemplateResource;
 use App\Jobs\WriteCampaignSequence;
@@ -52,7 +53,7 @@ class CampaignActions
             ->modalCancelActionLabel('Close')
             ->fillForm(fn (Campaign $record): array => [
                 'lead_id' => app(CampaignAudience::class)->query($record)->orderBy('leads.id')->value('leads.id'),
-                'step_id' => $record->steps()->value('id'),
+                'step_id' => $record->steps()->where('type', StepType::Email->value)->value('id'),
             ])
             ->schema([
                 Select::make('lead_id')
@@ -68,7 +69,7 @@ class CampaignActions
                     ->live(),
                 Select::make('step_id')
                     ->label('Email')
-                    ->options(fn (Campaign $record): array => $record->steps()->get()
+                    ->options(fn (Campaign $record): array => $record->steps()->where('type', StepType::Email->value)->get()
                         ->mapWithKeys(fn ($step): array => [$step->id => "Email {$step->position}".($step->subject ? ": {$step->subject}" : ' (same thread)')])
                         ->all())
                     ->live(),
@@ -78,7 +79,7 @@ class CampaignActions
 
     public static function renderPreview(Campaign $campaign, mixed $leadId, mixed $stepId): HtmlString
     {
-        $step = $campaign->steps()->whereKey($stepId)->first() ?? $campaign->steps()->first();
+        $step = $campaign->steps()->where('type', StepType::Email->value)->whereKey($stepId)->first() ?? $campaign->steps()->where('type', StepType::Email->value)->first();
 
         if (! $step) {
             return new HtmlString('<p>Add an email to the sequence and save to preview it.</p>');
@@ -304,13 +305,13 @@ class CampaignActions
                 .' leads in this campaign\'s audience. Review and approve it in AI review, then use the variable in your email, e.g. {{ai_first_line}}.')
             ->modalSubmitActionLabel('Start writing')
             ->fillForm(fn (Campaign $record): array => [
-                'step_id' => $record->steps()->value('id'),
+                'step_id' => $record->steps()->where('type', StepType::Email->value)->value('id'),
                 'type' => AiContentType::FirstLine->value,
             ])
             ->schema([
                 Select::make('step_id')
                     ->label('For email')
-                    ->options(fn (Campaign $record): array => $record->steps()->get()
+                    ->options(fn (Campaign $record): array => $record->steps()->where('type', StepType::Email->value)->get()
                         ->mapWithKeys(fn ($step): array => [$step->id => "Email {$step->position}".($step->subject ? ": {$step->subject}" : ' (same thread)')])
                         ->all())
                     ->required(),
@@ -342,7 +343,7 @@ class CampaignActions
                     ->helperText('Off: only leads without content for this email are written. Approved content is never replaced.'),
             ])
             ->action(function (Campaign $record, array $data): void {
-                $step = $record->steps()->findOrFail($data['step_id']);
+                $step = $record->steps()->where('type', StepType::Email->value)->findOrFail($data['step_id']);
                 $template = AiPromptTemplate::query()
                     ->where('workspace_id', $record->workspace_id)
                     ->findOrFail($data['template_id']);

@@ -123,6 +123,17 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
   `ClientReport` (secret link, hashed; `routes/web.php` `reports.show`; `reports:send`
   → `SendClientReport` → `ClientReportMail`). UI: `Pages/Clients`, branding in
   `Tenancy/WorkspaceSettings`
+- Multichannel: `campaign_steps.type` (`StepType`; email or manual). `Services/Campaigns/
+  CampaignTasks` (SendScheduler parks leads on a manual step: next_send_at null + a
+  `CampaignTask`, one per lead per step; complete/skip moves the sequence on). Only email
+  steps send; launcher, builder and previews look at email steps. UI: `Pages/Tasks`
+- Placement tests: `Services/Placement/PlacementTester` (seeds = `PLACEMENT_SEED_WORKSPACE`
+  + own mailboxes), `SendPlacementTest` (sending), `CheckPlacementSeed` (imap, EXAMINE only),
+  `placement:check`; `Services/Mail/Imap/MailboxImap` (login + spam folder; warmup uses it too)
+- Lead finder: `Services/LeadFinder/LeadFinder` (Hunter.io), `FindLeads` (imports, batched per domain)
+- Scale: `Workspace::sendingQueue()` (`sending-priority` for `dedicated_sending`),
+  `DB_READ_HOST` replicas in `config/database.php`, `Services/Archive/EventArchiver`
+  (`events:archive`)
 - `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
   `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
   monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),

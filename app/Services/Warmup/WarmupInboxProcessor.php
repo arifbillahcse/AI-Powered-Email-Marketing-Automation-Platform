@@ -5,11 +5,9 @@ namespace App\Services\Warmup;
 use App\Jobs\SendWarmupEmail;
 use App\Models\EmailAccount;
 use App\Models\WarmupMessage;
-use App\Services\Mail\HostGuard;
 use App\Services\Mail\Imap\ImapClient;
-use App\Services\Mail\Imap\ImapConnector;
+use App\Services\Mail\Imap\MailboxImap;
 use App\Services\Mail\MailboxConnectionException;
-use App\Services\Mail\OAuth\MailboxOAuth;
 use Illuminate\Support\Str;
 
 /**
@@ -23,8 +21,7 @@ use Illuminate\Support\Str;
 class WarmupInboxProcessor
 {
     public function __construct(
-        protected ImapConnector $connector,
-        protected HostGuard $guard,
+        protected MailboxImap $imap,
     ) {}
 
     /**
@@ -34,19 +31,13 @@ class WarmupInboxProcessor
      */
     public function process(EmailAccount $mailbox): int
     {
-        $this->guard->assertAllowed($mailbox->imap_host);
-
-        $client = new ImapClient($this->connector->connect($mailbox->imap_host, $mailbox->imap_port, $mailbox->imap_encryption));
+        $client = $this->imap->open($mailbox);
         $started = microtime(true);
         $handled = 0;
 
         try {
-            $mailbox->usesOAuth()
-                ? $client->loginWithToken($mailbox->imap_encryption, $mailbox->imapUsername(), app(MailboxOAuth::class)->accessToken($mailbox))
-                : $client->login($mailbox->imap_encryption, $mailbox->imapUsername(), $mailbox->imapPassword());
-
             $folders = $client->folders();
-            $spam = $this->spamFolder($folders);
+            $spam = MailboxImap::spamFolder($folders);
             $archive = $this->archiveFolder($client, $folders);
             $header = (string) config('outreach.warmup.header');
             $limit = (int) config('outreach.warmup.messages_per_run');
@@ -118,30 +109,6 @@ class WarmupInboxProcessor
             SendWarmupEmail::dispatch($mailbox->getKey(), $message->getKey())
                 ->delay(now()->addMinutes(random_int((int) $min, (int) $max)));
         }
-    }
-
-    /**
-     * The spam folder: flagged \Junk by the server, or else a known name.
-     *
-     * @param  list<array{name: string, delimiter: ?string, attributes: list<string>}>  $folders
-     */
-    protected function spamFolder(array $folders): ?string
-    {
-        foreach ($folders as $folder) {
-            if (in_array('\\junk', $folder['attributes'], true)) {
-                return $folder['name'];
-            }
-        }
-
-        $names = array_map(fn (string $name): string => Str::lower($name), config('outreach.warmup.spam_folders'));
-
-        foreach ($folders as $folder) {
-            if (in_array(Str::lower($folder['name']), $names, true) && ! in_array('\\noselect', $folder['attributes'], true)) {
-                return $folder['name'];
-            }
-        }
-
-        return null;
     }
 
     /**

@@ -227,6 +227,23 @@ return [
             'nice' => 0,
         ],
 
+        // Dedicated sending for high-volume workspaces (Super admin →
+        // Workspaces → Dedicated sending). Its own processes, so other
+        // workspaces' volume never delays them.
+        'supervisor-sending-priority' => [
+            'connection' => 'redis',
+            'queue' => ['sending-priority'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'size',
+            'maxProcesses' => 2,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 3,
+            'timeout' => 120,
+            'nice' => 0,
+        ],
+
         // IMAP reply polling + bounce parsing (Phase 7).
         'supervisor-imap' => [
             'connection' => 'redis',
@@ -258,16 +275,19 @@ return [
     ],
 
     'environments' => [
+        // Scale each pool independently (dedicated workers per workload).
         'production' => [
-            'supervisor-default' => ['maxProcesses' => 5],
-            'supervisor-sending' => ['maxProcesses' => 20, 'balanceMaxShift' => 2, 'balanceCooldown' => 3],
-            'supervisor-imap' => ['maxProcesses' => 10],
-            'supervisor-bulk' => ['maxProcesses' => 8],
+            'supervisor-default' => ['maxProcesses' => (int) env('HORIZON_DEFAULT_PROCESSES', 5)],
+            'supervisor-sending' => ['maxProcesses' => (int) env('HORIZON_SENDING_PROCESSES', 20), 'balanceMaxShift' => 2, 'balanceCooldown' => 3],
+            'supervisor-sending-priority' => ['maxProcesses' => (int) env('HORIZON_SENDING_PRIORITY_PROCESSES', 10), 'balanceMaxShift' => 2, 'balanceCooldown' => 3],
+            'supervisor-imap' => ['maxProcesses' => (int) env('HORIZON_IMAP_PROCESSES', 10)],
+            'supervisor-bulk' => ['maxProcesses' => (int) env('HORIZON_BULK_PROCESSES', 8)],
         ],
 
         'local' => [
             'supervisor-default' => ['maxProcesses' => 1],
             'supervisor-sending' => ['maxProcesses' => 1],
+            'supervisor-sending-priority' => ['maxProcesses' => 1],
             'supervisor-imap' => ['maxProcesses' => 1],
             'supervisor-bulk' => ['maxProcesses' => 1],
         ],

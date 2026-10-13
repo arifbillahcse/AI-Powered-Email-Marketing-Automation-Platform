@@ -40,17 +40,20 @@ class CampaignLauncher
             $problems[] = 'Templates can\'t be launched. Create a campaign from it first.';
         }
 
+        // Multichannel: manual steps (LinkedIn, calls) need no subject or body.
+        $emails = $steps->filter(fn (CampaignStep $step): bool => $step->isEmail())->values();
+
         if ($steps->isEmpty()) {
             $problems[] = 'Add at least one email to the sequence.';
-        } elseif (blank($steps->first()->subject)) {
+        } elseif ($emails->isNotEmpty() && blank($emails->first()->subject)) {
             $problems[] = 'The first email needs a subject.';
         }
 
-        if ($steps->contains(fn ($step) => blank(strip_tags((string) $step->body)))) {
+        if ($emails->contains(fn (CampaignStep $step) => blank(strip_tags((string) $step->body)))) {
             $problems[] = 'Every email in the sequence needs a body.';
         }
 
-        if (! $campaign->emailAccounts()->where('status', EmailAccountStatus::Active->value)->exists()) {
+        if ($emails->isNotEmpty() && ! $campaign->emailAccounts()->where('status', EmailAccountStatus::Active->value)->exists()) {
             $problems[] = 'Choose at least one active mailbox to send from.';
         }
 
@@ -65,7 +68,7 @@ class CampaignLauncher
         if ($this->audience->count($campaign) === 0) {
             $problems[] = 'The audience is empty. Add lists or segments with leads that aren\'t suppressed.';
         } else {
-            array_push($problems, ...$this->aiProblems($campaign, $steps));
+            array_push($problems, ...$this->aiProblems($campaign, $emails));
         }
 
         return $problems;

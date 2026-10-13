@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StepType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,6 +14,7 @@ class CampaignStep extends Model
      */
     protected $fillable = [
         'position',
+        'type',
         'delay_days',
         'subject',
         'body',
@@ -23,8 +25,10 @@ class CampaignStep extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
+        'type' => 'email',
         'delay_days' => 0,
         'subject' => null,
+        'body' => null,
         'ab_winner' => null,
         'ab_decided_at' => null,
     ];
@@ -33,6 +37,7 @@ class CampaignStep extends Model
     {
         return [
             'position' => 'integer',
+            'type' => StepType::class,
             'delay_days' => 'integer',
             'ab_decided_at' => 'datetime',
         ];
@@ -58,6 +63,11 @@ class CampaignStep extends Model
 
     public function isReplyInThread(): bool
     {
-        return blank($this->subject) && $this->position > 1;
+        return $this->isEmail() && blank($this->subject) && $this->position > 1;
+    }
+
+    public function isEmail(): bool
+    {
+        return $this->type === StepType::Email;
     }
 }

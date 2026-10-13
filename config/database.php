@@ -62,6 +62,13 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ], fn ($value) => $value !== null) : [],
+            // Read replicas: DB_READ_HOST=10.0.0.11,10.0.0.12 sends SELECTs
+            // there; writes (and reads right after a write) use DB_HOST.
+            ...(env('DB_READ_HOST') ? [
+                'read' => ['host' => array_map('trim', explode(',', (string) env('DB_READ_HOST')))],
+                'write' => ['host' => [env('DB_HOST', '127.0.0.1')]],
+                'sticky' => true,
+            ] : []),
         ],
 
         'mariadb' => [
@@ -82,6 +89,13 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ], fn ($value) => $value !== null) : [],
+            // Read replicas: DB_READ_HOST=10.0.0.11,10.0.0.12 sends SELECTs
+            // there; writes (and reads right after a write) use DB_HOST.
+            ...(env('DB_READ_HOST') ? [
+                'read' => ['host' => array_map('trim', explode(',', (string) env('DB_READ_HOST')))],
+                'write' => ['host' => [env('DB_HOST', '127.0.0.1')]],
+                'sticky' => true,
+            ] : []),
         ],
 
         'pgsql' => [
@@ -97,6 +111,13 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Read replicas: DB_READ_HOST=10.0.0.11,10.0.0.12 sends SELECTs
+            // there; writes (and reads right after a write) use DB_HOST.
+            ...(env('DB_READ_HOST') ? [
+                'read' => ['host' => array_map('trim', explode(',', (string) env('DB_READ_HOST')))],
+                'write' => ['host' => [env('DB_HOST', '127.0.0.1')]],
+                'sticky' => true,
+            ] : []),
         ],
 
         'sqlsrv' => [

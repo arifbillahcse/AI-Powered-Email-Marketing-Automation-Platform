@@ -100,6 +100,27 @@ sequence as `{{ai_first_line}}`, `{{ai_subject}}` or `{{ai_email}}`. Only
 approved content is ever sent: without a fallback (`{{ai_first_line|Hi}}`) a
 campaign can't launch, and a lead's email waits, until its content is approved.
 
+## Multichannel, placement tests and lead finder
+
+- **Multichannel steps**: in a campaign's sequence, pick a step type: email,
+  LinkedIn (view profile, connection request, message), phone call or other
+  task. Manual steps become tasks in Outreach → **Tasks**; the lead's sequence
+  continues once a task is marked done or skipped.
+- **Inbox placement**: Infrastructure → **Inbox placement** sends a test email
+  to seed inboxes and shows inbox / spam / missing per provider. Seeds are the
+  mailboxes of the workspace named in `PLACEMENT_SEED_WORKSPACE` (connect Gmail,
+  Outlook, Yahoo... accounts there), plus optionally the customer's own.
+- **Lead finder**: Outreach → **Lead finder** finds people and work emails at
+  company domains (Hunter.io, `HUNTER_API_KEY`) and adds them to a list.
+
+## Scaling
+
+- Horizon pools per workload (`HORIZON_*_PROCESSES`); Super admin → Workspaces
+  → **Dedicated sending** moves a big sender to the `sending-priority` queue.
+- `DB_READ_HOST` adds read replicas.
+- `events:archive` moves raw open/click events older than
+  `ARCHIVE_EVENTS_AFTER_DAYS` to `storage/app/private/archives/email-events/`.
+
 ## Agencies and white label
 
 Settings → **Clients** (owners and admins, `white_label` module) adds a client

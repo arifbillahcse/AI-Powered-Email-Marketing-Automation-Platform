@@ -229,6 +229,17 @@ The same cron checks every mailbox for replies every 5 minutes over IMAP
 up over a few runs. Your host must allow outbound connections to your IMAP
 servers; if a mailbox can't be read, the error is saved on it.
 
+## Placement tests, lead finder and archiving
+
+The same cron checks placement tests every 5 minutes and archives old email
+events hourly (to `storage/app/private/archives/email-events/`, gzipped; keep
+them in your backups or delete old months). For placement tests, create a
+workspace for seed accounts, connect a few Gmail / Outlook / Yahoo mailboxes
+there and set `PLACEMENT_SEED_WORKSPACE` to its slug. The lead finder needs
+`HUNTER_API_KEY` and outbound HTTPS to `api.hunter.io`. Read replicas and
+Horizon worker pools are for VPS setups; on cPanel the cron worker already
+works the `sending-priority` queue first.
+
 ## Agencies: custom domains and client reports
 
 An agency's custom domain (`app.youragency.com`) must reach this app: in

@@ -2,6 +2,7 @@
 
 namespace App\Services\Campaigns;
 
+use App\Enums\StepType;
 use App\Models\Campaign;
 use App\Models\CampaignStep;
 use App\Models\EmailAccount;
@@ -32,7 +33,8 @@ class CampaignMessageBuilder
         $variables = $this->variables($lead, $mailbox);
         $seed = "{$lead->getKey()}:{$step->getKey()}";
         $replyInThread = $step->isReplyInThread();
-        $firstStep = $campaign->steps()->where('position', 1)->first(['id', 'subject']);
+        // The first email of the sequence (a manual step may come before it).
+        $firstStep = $campaign->steps()->where('type', StepType::Email->value)->first(['id', 'subject']);
 
         $approved = $this->approvedAi($campaign, $lead);
         $stepAi = $approved[$step->getKey()] ?? [];

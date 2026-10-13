@@ -74,6 +74,7 @@ class Workspace extends Model
         'report_recipients' => null,
         'report_frequency' => 'off',
         'report_last_sent_at' => null,
+        'dedicated_sending' => false,
     ];
 
     protected function casts(): array
@@ -84,6 +85,7 @@ class Workspace extends Model
             'report_token' => 'encrypted',
             'report_recipients' => 'array',
             'report_last_sent_at' => 'datetime',
+            'dedicated_sending' => 'boolean',
         ];
     }
 
@@ -143,6 +145,14 @@ class Workspace extends Model
     public function clients(): HasMany
     {
         return $this->hasMany(self::class, 'parent_id');
+    }
+
+    /**
+     * The queue its campaign emails go to (dedicated workers for big senders).
+     */
+    public function sendingQueue(): string
+    {
+        return $this->dedicated_sending ? 'sending-priority' : 'sending';
     }
 
     public function isClient(): bool

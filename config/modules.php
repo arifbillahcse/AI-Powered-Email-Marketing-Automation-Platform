@@ -40,6 +40,24 @@ return [
         'enabled' => env('MODULE_EMAIL_VERIFICATION_ENABLED', true),
     ],
 
+    'multichannel' => [
+        'label' => 'Multichannel Steps',
+        'phase' => 16,
+        'enabled' => env('MODULE_MULTICHANNEL_ENABLED', true),
+    ],
+
+    'inbox_placement' => [
+        'label' => 'Inbox Placement Tests',
+        'phase' => 16,
+        'enabled' => env('MODULE_INBOX_PLACEMENT_ENABLED', true),
+    ],
+
+    'lead_finder' => [
+        'label' => 'Lead Finder',
+        'phase' => 16,
+        'enabled' => env('MODULE_LEAD_FINDER_ENABLED', true),
+    ],
+
     'white_label' => [
         'label' => 'White Label',
         'phase' => 15,

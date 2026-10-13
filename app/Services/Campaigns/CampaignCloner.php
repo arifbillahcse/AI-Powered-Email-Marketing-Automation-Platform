@@ -30,7 +30,7 @@ class CampaignCloner
             $copy->save();
 
             foreach ($source->steps()->with('variants')->get() as $step) {
-                $newStep = $copy->steps()->create($step->only(['position', 'delay_days', 'subject', 'body']));
+                $newStep = $copy->steps()->create($step->only(['position', 'type', 'delay_days', 'subject', 'body']));
 
                 // A/B versions come along; the test starts over (no winner).
                 foreach ($step->variants as $variant) {

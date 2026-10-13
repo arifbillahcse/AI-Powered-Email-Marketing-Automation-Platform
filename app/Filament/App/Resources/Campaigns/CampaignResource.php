@@ -3,6 +3,7 @@
 namespace App\Filament\App\Resources\Campaigns;
 
 use App\Enums\EmailAccountStatus;
+use App\Enums\StepType;
 use App\Filament\App\Resources\Campaigns\Pages\CreateCampaign;
 use App\Filament\App\Resources\Campaigns\Pages\EditCampaign;
 use App\Filament\App\Resources\Campaigns\Pages\ListCampaigns;
@@ -11,6 +12,8 @@ use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Models\Campaign;
 use App\Models\CampaignStepVariant;
 use App\Models\EmailAccount;
+use App\Models\Workspace;
+use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\CampaignAudience;
 use App\Services\Campaigns\CampaignMessageBuilder;
 use App\Services\Compliance\SpamChecker;
@@ -105,17 +108,28 @@ class CampaignResource extends Resource
                     ->orderColumn('position')
                     ->minItems(1)
                     ->defaultItems(1)
-                    ->addActionLabel('Add follow-up email')
+                    ->addActionLabel('Add step')
                     ->collapsible()
-                    ->itemLabel(fn (array $state): string => filled($state['subject'] ?? null)
-                        ? (string) $state['subject']
-                        : 'Follow-up (same thread)')
+                    ->itemLabel(fn (array $state): string => static::stepLabel($state))
                     ->extraItemActions([static::spamCheckAction()])
                     ->schema([
+                        Select::make('type')
+                            ->label('Step')
+                            ->options(fn (): array => static::multichannelAllowed()
+                                ? collect(StepType::cases())->mapWithKeys(fn (StepType $type): array => [$type->value => $type->getLabel()])->all()
+                                : [StepType::Email->value => StepType::Email->getLabel()])
+                            ->helperText(fn (Get $get): ?string => static::isManualStep($get('type'))
+                                ? 'A manual step: when a lead gets here, a task appears in Outreach → Tasks and the sequence waits until it\'s done.'
+                                : (static::multichannelAllowed() ? null : (modules()->enabled('multichannel') ? 'LinkedIn and call steps aren\'t included in your plan.' : 'LinkedIn and call steps are coming soon.')))
+                            ->default(StepType::Email->value)
+                            ->selectablePlaceholder(false)
+                            // Older form states (and API-made steps) have no type: email.
+                            ->dehydrateStateUsing(fn (mixed $state): string => $state instanceof StepType ? $state->value : ((string) $state ?: StepType::Email->value))
+                            ->live(),
                         Grid::make(4)->schema([
                             TextInput::make('delay_days')
                                 ->label('Wait')
-                                ->helperText('Days after the previous email. Ignored for the first one.')
+                                ->helperText('Days after the previous step. Ignored for the first one.')
                                 ->numeric()
                                 ->integer()
                                 ->minValue(0)
@@ -124,7 +138,11 @@ class CampaignResource extends Resource
                                 ->suffix('days')
                                 ->required(),
                             TextInput::make('subject')
-                                ->helperText('Leave blank on a follow-up to reply in the same thread.')
+                                ->label(fn (Get $get): string => static::isManualStep($get('type')) ? 'Task title' : 'Subject')
+                                ->placeholder(fn (Get $get): ?string => static::isManualStep($get('type')) ? 'e.g. Connect with {{first_name}} on LinkedIn' : null)
+                                ->helperText(fn (Get $get): string => static::isManualStep($get('type'))
+                                    ? 'Optional. Variables like {{first_name}} work here and in the notes.'
+                                    : 'Leave blank on a follow-up to reply in the same thread.')
                                 ->maxLength(255)
                                 ->live(onBlur: true)
                                 ->columnSpan(3),
@@ -133,22 +151,53 @@ class CampaignResource extends Resource
                         // converted to text when the email is built.
                         RichEditor::make('body')
                             ->hiddenLabel()
-                            ->required()
-                            ->helperText(fn (Get $get): ?string => $get('../../plain_text') ? 'Plain-text mode: formatting is removed when sending; links become "text (url)".' : null)
+                            ->required(fn (Get $get): bool => ! static::isManualStep($get('type')))
+                            ->placeholder(fn (Get $get): ?string => static::isManualStep($get('type')) ? 'Notes for whoever does the task: a message to send, a call script...' : null)
+                            ->helperText(fn (Get $get): ?string => ! static::isManualStep($get('type')) && $get('../../plain_text') ? 'Plain-text mode: formatting is removed when sending; links become "text (url)".' : null)
                             ->toolbarButtons([['bold', 'italic', 'link'], ['bulletList', 'orderedList'], ['undo', 'redo']])
                             ->live(onBlur: true),
                         Text::make(fn (Get $get): string => app(SpamChecker::class)->summary($get('subject'), static::editorHtml($get('body'))))
-                            ->color(fn (Get $get): string => app(SpamChecker::class)->check($get('subject'), static::editorHtml($get('body')))['color']),
-                        static::variantsRepeater(),
+                            ->color(fn (Get $get): string => app(SpamChecker::class)->check($get('subject'), static::editorHtml($get('body')))['color'])
+                            ->visible(fn (Get $get): bool => ! static::isManualStep($get('type'))),
+                        static::variantsRepeater()
+                            ->visible(fn (Get $get): bool => ! static::isManualStep($get('type'))),
                         Select::make('ab_winner')
                             ->label('A/B winner')
                             ->placeholder('Keep testing')
                             ->helperText('Once set, every lead gets this version. Picked automatically when the test is decided (Options tab).')
                             ->options(fn (Get $get): array => collect(['A', ...collect($get('variants') ?? [])->pluck('label')->filter()->all()])
                                 ->mapWithKeys(fn (string $label): array => [$label => "Version {$label}"])->all())
-                            ->visible(fn (Get $get): bool => filled($get('variants'))),
+                            ->visible(fn (Get $get): bool => filled($get('variants')) && ! static::isManualStep($get('type'))),
                     ]),
             ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    protected static function stepLabel(array $state): string
+    {
+        $type = $state['type'] instanceof StepType ? $state['type'] : StepType::tryFrom((string) ($state['type'] ?? 'email'));
+
+        if ($type !== null && $type->isManual()) {
+            return $type->getLabel().(filled($state['subject'] ?? null) ? ': '.$state['subject'] : '');
+        }
+
+        return filled($state['subject'] ?? null) ? (string) $state['subject'] : 'Follow-up (same thread)';
+    }
+
+    protected static function multichannelAllowed(): bool
+    {
+        $workspace = Filament::getTenant();
+
+        return $workspace instanceof Workspace && app(Entitlements::class)->allowsModule($workspace, 'multichannel');
+    }
+
+    protected static function isManualStep(mixed $type): bool
+    {
+        $type = $type instanceof StepType ? $type : StepType::tryFrom((string) ($type ?? 'email'));
+
+        return (bool) $type?->isManual();
     }
 
     /**

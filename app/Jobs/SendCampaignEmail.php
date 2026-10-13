@@ -16,6 +16,7 @@ use App\Models\EmailMessage;
 use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\AbTesting;
 use App\Services\Campaigns\CampaignMessageBuilder;
+use App\Services\Campaigns\CampaignTasks;
 use App\Services\Integrations\IntegrationEvents;
 use App\Services\Leads\SuppressionList;
 use App\Services\Mail\MailboxConnectionException;
@@ -125,6 +126,13 @@ class SendCampaignEmail implements ShouldQueue
             return;
         }
 
+        // A manual (LinkedIn, call) step: it becomes a task, nothing is sent.
+        if (! $step->isEmail()) {
+            app(CampaignTasks::class)->open($campaignLead, $step->position);
+
+            return;
+        }
+
         // Reserve this step for this lead. If another run already did, stop.
         $message = new EmailMessage;
         $message->forceFill([
@@ -195,8 +203,8 @@ class SendCampaignEmail implements ShouldQueue
         if ($content['reply_in_thread']) {
             $previous = $campaignLead->messages()->whereNotNull('sent_at')->pluck('message_id')->filter()->values()->all();
 
-            // Keep the subject of the version of email 1 this lead actually got.
-            $firstSubject = $campaignLead->messages()->where('step_position', 1)->whereNotNull('sent_at')->value('subject');
+            // Keep the subject of the version of the first email this lead actually got.
+            $firstSubject = $campaignLead->messages()->whereNotNull('sent_at')->value('subject');
 
             if (filled($firstSubject)) {
                 $email->subject(str_starts_with(strtolower($firstSubject), 're:') ? $firstSubject : "Re: {$firstSubject}");
