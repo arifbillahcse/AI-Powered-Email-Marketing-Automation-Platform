@@ -126,9 +126,10 @@ it('marks unfound emails missing and finishes the test', function () {
 
 it('starts a test from the page', function () {
     Queue::fake();
+    // Before signing in: the panel's tenancy observer assigns new records to the current workspace.
+    EmailAccount::factory()->for($this->seeds)->create();
     $workspace = actingInWorkspace();
     $sender = EmailAccount::factory()->for($workspace)->create();
-    EmailAccount::factory()->for($this->seeds)->create();
 
     Livewire::test(InboxPlacement::class)
         ->callAction('newTest', data: ['email_account_id' => $sender->id, 'subject' => 'Hello', 'body' => 'Hi there', 'include_own' => false])
