@@ -35,7 +35,9 @@ class PlacementTester
     {
         $seedWorkspace = $this->seedWorkspaceId();
 
+        // Seeds live in another workspace: skip the panel's tenant scope.
         return EmailAccount::query()
+            ->withoutGlobalScopes()
             ->where('status', EmailAccountStatus::Active->value)
             ->whereKeyNot($sender->getKey())
             ->where('email', '!=', $sender->email)

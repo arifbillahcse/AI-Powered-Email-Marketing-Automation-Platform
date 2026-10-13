@@ -53,7 +53,8 @@ class CampaignLauncher
             $problems[] = 'Every email in the sequence needs a body.';
         }
 
-        if ($emails->isNotEmpty() && ! $campaign->emailAccounts()->where('status', EmailAccountStatus::Active->value)->exists()) {
+        // Only a sequence of manual steps alone needs no mailbox.
+        if (($steps->isEmpty() || $emails->isNotEmpty()) && ! $campaign->emailAccounts()->where('status', EmailAccountStatus::Active->value)->exists()) {
             $problems[] = 'Choose at least one active mailbox to send from.';
         }
 

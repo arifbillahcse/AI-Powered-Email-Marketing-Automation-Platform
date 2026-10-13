@@ -220,7 +220,12 @@ class InboxPlacement extends Page implements HasTable
      */
     protected function resultsSchema(PlacementTest $test): array
     {
-        $results = PlacementResult::query()->where('placement_test_id', $test->getKey())->with('seed')->orderBy('provider')->get();
+        // Seeds may belong to the platform's seed workspace (outside the tenant scope).
+        $results = PlacementResult::query()
+            ->where('placement_test_id', $test->getKey())
+            ->with(['seed' => fn ($query) => $query->withoutGlobalScopes()])
+            ->orderBy('provider')
+            ->get();
 
         if ($results->isEmpty()) {
             return [Text::make('No results.')];

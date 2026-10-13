@@ -11,6 +11,7 @@ use App\Models\Workspace;
 use App\Services\Mail\Imap\ImapConnector;
 use App\Services\Placement\PlacementException;
 use App\Services\Placement\PlacementTester;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\Fakes\ScriptedImapStream;
@@ -117,8 +118,10 @@ it('marks unfound emails missing and finishes the test', function () {
 
     expect($pending->refresh()->status)->toBe('missing')
         ->and($test->refresh()->status)->toBe('done')
-        ->and(app(PlacementTester::class)->summary($test))->toMatchArray(['inbox' => 1, 'missing' => 1, 'rate' => 50])
-        ->and(auth()->user()->notifications()->count())->toBe(1);
+        ->and(app(PlacementTester::class)->summary($test))->toMatchArray(['inbox' => 1, 'missing' => 1, 'rate' => 50]);
+
+    // Filament database notifications are queued.
+    Queue::assertPushed(SendQueuedNotifications::class);
 });
 
 it('starts a test from the page', function () {
