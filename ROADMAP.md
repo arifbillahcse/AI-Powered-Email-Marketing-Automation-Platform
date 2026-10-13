@@ -323,3 +323,27 @@ brand and show them results without giving them access to the tool.
 **Done when:** sequences reach leads beyond email, deliverability can be
 measured before sending, and the platform scales past one database and
 one worker pool.
+
+---
+
+## Stage 4: Launch
+
+### ✅ Phase 17: Launch polish
+- Public website (`config/marketing.php`, `MARKETING_SITE_ENABLED`): landing
+  page (features of the enabled modules), pricing from the active plans,
+  help center (Markdown articles in `resources/help`), terms and privacy
+  (with an anti-spam acceptable use policy), sitemap. Self-contained CSS, so
+  it works without a Vite build; never shown on agencies' custom domains
+- Onboarding checklist on the dashboard: mailbox, DNS, mailing address,
+  warmup, leads, campaign, launch; links to each step, dismissible
+- Template library: ready-made sequences (cold outreach, agency services,
+  SaaS demo, recruiting, events, LinkedIn + email, re-engagement) with
+  fallbacks for every variable; Campaigns → Template library
+- "Help center" in the app's user menu
+- `php artisan app:demo`: a demo user and workspace with leads, lists, a
+  draft campaign and a finished one with 30 days of results (nothing is
+  ever sent; no Faker needed)
+
+**Done when:** a visitor can land on the site, see pricing, sign up and be
+guided to a first campaign, and a demo account shows the product at its best.
+

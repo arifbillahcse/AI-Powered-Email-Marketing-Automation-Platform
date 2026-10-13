@@ -5,10 +5,17 @@ use App\Http\Controllers\ClientReportController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MailboxOAuthController;
+use App\Http\Controllers\MarketingController;
 use Illuminate\Support\Facades\Route;
 
-// The public marketing site comes later; send visitors to the app for now.
-Route::redirect('/', '/app');
+// Public website (config/marketing.php). Off: "/" goes to the app.
+Route::get('/', [MarketingController::class, 'home'])->name('home');
+Route::get('/pricing', [MarketingController::class, 'pricing'])->name('pricing');
+Route::get('/help', [MarketingController::class, 'help'])->name('help.index');
+Route::get('/help/{slug}', [MarketingController::class, 'article'])->where('slug', '[a-z0-9-]+')->name('help.article');
+Route::get('/terms', [MarketingController::class, 'legal'])->defaults('page', 'terms')->name('legal.terms');
+Route::get('/privacy', [MarketingController::class, 'legal'])->defaults('page', 'privacy')->name('legal.privacy');
+Route::get('/sitemap.xml', [MarketingController::class, 'sitemap'])->name('sitemap');
 
 Route::get('/invitations/{token}', AcceptInvitationController::class)
     ->middleware('throttle:20,1')

@@ -100,6 +100,18 @@ sequence as `{{ai_first_line}}`, `{{ai_subject}}` or `{{ai_email}}`. Only
 approved content is ever sent: without a fallback (`{{ai_first_line|Hi}}`) a
 campaign can't launch, and a lead's email waits, until its content is approved.
 
+## Public website and demo
+
+`/` is a landing page with features, `/pricing` lists the active plans,
+`/help` is the help center (edit the Markdown in `resources/help`), plus
+`/terms`, `/privacy` and `/sitemap.xml`. Set the company details with the
+`MARKETING_*` variables, or `MARKETING_SITE_ENABLED=false` to open the app at
+`/`. New workspaces get a "Get started" checklist on the dashboard, and
+Campaigns → **Template library** starts a campaign from a ready-made sequence.
+
+For sales demos: `php artisan app:demo --email=demo@yourdomain.com
+--password=...` creates a workspace full of sample data (`--fresh` rebuilds it).
+
 ## Multichannel, placement tests and lead finder
 
 - **Multichannel steps**: in a campaign's sequence, pick a step type: email,

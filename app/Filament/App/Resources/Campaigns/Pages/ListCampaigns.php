@@ -5,6 +5,7 @@ namespace App\Filament\App\Resources\Campaigns\Pages;
 use App\Filament\App\Resources\Campaigns\CampaignResource;
 use App\Models\Campaign;
 use App\Services\Campaigns\CampaignCloner;
+use App\Services\Campaigns\TemplateLibrary;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
@@ -33,6 +34,25 @@ class ListCampaigns extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('templateLibrary')
+                ->label('Template library')
+                ->icon(Heroicon::OutlinedSquares2x2)
+                ->color('gray')
+                ->visible(fn (): bool => Auth::user()->can('create', Campaign::class))
+                ->modalDescription('Start from a proven sequence. Replace the [bracketed] parts with your own words before launching.')
+                ->schema([
+                    Select::make('template')
+                        ->options(fn (): array => collect(app(TemplateLibrary::class)->available(Filament::getTenant()))->map(fn (array $template): string => $template['name'])->all())
+                        ->helperText(fn ($get): ?string => TemplateLibrary::TEMPLATES[$get('template')]['description'] ?? null)
+                        ->live()
+                        ->afterStateUpdated(fn ($state, $set) => $set('name', TemplateLibrary::TEMPLATES[$state]['name'] ?? null))
+                        ->required(),
+                    TextInput::make('name')->label('Campaign name')->required()->maxLength(150),
+                ])
+                ->action(function (array $data): void {
+                    $campaign = app(TemplateLibrary::class)->create(Filament::getTenant(), (string) $data['template'], (string) $data['name'], Auth::user());
+                    $this->redirect(CampaignResource::getUrl('edit', ['record' => $campaign]));
+                }),
             Action::make('fromTemplate')
                 ->label('Use a template')
                 ->icon(Heroicon::OutlinedBookmark)

@@ -75,6 +75,7 @@ class Workspace extends Model
         'report_frequency' => 'off',
         'report_last_sent_at' => null,
         'dedicated_sending' => false,
+        'onboarding_dismissed_at' => null,
     ];
 
     protected function casts(): array
@@ -86,6 +87,7 @@ class Workspace extends Model
             'report_recipients' => 'array',
             'report_last_sent_at' => 'datetime',
             'dedicated_sending' => 'boolean',
+            'onboarding_dismissed_at' => 'datetime',
         ];
     }
 

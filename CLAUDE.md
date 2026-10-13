@@ -134,6 +134,10 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - Scale: `Workspace::sendingQueue()` (`sending-priority` for `dedicated_sending`),
   `DB_READ_HOST` replicas in `config/database.php`, `Services/Archive/EventArchiver`
   (`events:archive`)
+- Launch: `MarketingController` + `resources/views/marketing/*` (public site, inline CSS;
+  `config/marketing.php`), `Services/Marketing/HelpCenter` (`resources/help/*.md`, header
+  between --- lines, rendered with HTML stripped), `Widgets/OnboardingChecklist` (dashboard),
+  `Services/Campaigns/TemplateLibrary` (built-in sequences), `app:demo` (`CreateDemo`, no Faker)
 - `config/billing.php` (`BILLING_ENABLED`, off = unlimited): `app/Services/Billing/`
   `Entitlements` (limits, modules, `sendingBlockedReason()`: suspended / unpaid /
   monthly budget; SendScheduler, SendCampaignEmail and SendingDiagnostics use it),

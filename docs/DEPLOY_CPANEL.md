@@ -229,6 +229,19 @@ The same cron checks every mailbox for replies every 5 minutes over IMAP
 up over a few runs. Your host must allow outbound connections to your IMAP
 servers; if a mailbox can't be read, the error is saved on it.
 
+## Public website and demo account
+
+The site root shows the landing page, pricing and help center. Set
+`MARKETING_COMPANY` and `MARKETING_CONTACT_EMAIL` in `.env` (they appear on the
+terms and privacy pages; have them reviewed for your business). For a demo
+site, create a demo account once:
+
+```bash
+$PHP84 artisan app:demo --email=demo@yourdomain.com --password='choose-a-password'
+```
+
+Run it again with `--fresh` to reset the demo data.
+
 ## Placement tests, lead finder and archiving
 
 The same cron checks placement tests every 5 minutes and archives old email

@@ -8,6 +8,7 @@ use App\Filament\App\Tenancy\WorkspaceSettings;
 use App\Http\Middleware\ApplyBranding;
 use App\Models\Workspace;
 use App\Services\Agency\Branding;
+use Filament\Actions\Action;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -17,6 +18,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -51,6 +53,14 @@ class AppPanelProvider extends PanelProvider
             // Suspension, trial and billing notices, and the impersonation bar.
             ->renderHook(PanelsRenderHook::PAGE_START, fn (): string => view('filament.app.account-banner')->render())
             ->databaseNotifications()
+            ->userMenuItems([
+                'help' => Action::make('help')
+                    ->label('Help center')
+                    ->icon(Heroicon::OutlinedQuestionMarkCircle)
+                    ->url(fn (): string => route('help.index'))
+                    ->openUrlInNewTab()
+                    ->visible(fn (): bool => (bool) config('marketing.enabled')),
+            ])
             // White label: the workspace's (or custom domain's) brand.
             ->brandName(fn (): string => app(Branding::class)->current()?->name ?? config('app.name'))
             ->brandLogo(fn (): ?string => app(Branding::class)->current()?->logoUrl)
