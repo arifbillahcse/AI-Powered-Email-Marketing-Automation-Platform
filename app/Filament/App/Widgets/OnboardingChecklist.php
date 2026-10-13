@@ -31,6 +31,9 @@ class OnboardingChecklist extends Widget
 
     protected static ?int $sort = 0;
 
+    // Rendered with the page, not lazily: it's the first thing a new team sees.
+    protected static bool $isLazy = false;
+
     protected int|string|array $columnSpan = 'full';
 
     protected string $view = 'filament.app.widgets.onboarding-checklist';
