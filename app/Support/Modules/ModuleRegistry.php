@@ -45,7 +45,18 @@ class ModuleRegistry
     protected function definition(string $module): array
     {
         if (! $this->exists($module)) {
-            throw new InvalidArgumentException("Unknown module [{$module}]. Register it in config/modules.php.");
+            $exception = new InvalidArgumentException("Unknown module [{$module}]. Register it in config/modules.php, or clear a stale config cache (php artisan optimize:clear).");
+
+            // A typo should fail loudly while developing. In production the
+            // usual cause is a config cache from before an update: treat the
+            // module as off (and log it) instead of breaking the page.
+            if (! app()->isProduction()) {
+                throw $exception;
+            }
+
+            report($exception);
+
+            return ['label' => $module, 'phase' => 0, 'enabled' => false];
         }
 
         return $this->config->get("modules.{$module}");

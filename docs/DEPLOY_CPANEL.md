@@ -167,9 +167,27 @@ sending. Without it, nothing in the background happens.
 cd ~/outreach
 php artisan down
 php artisan migrate --force
+php artisan optimize:clear
 php artisan optimize
 php artisan up
 ```
+
+### Updating with Git
+
+```bash
+cd ~/outreach
+git pull
+php ~/composer.phar install --no-dev --optimize-autoloader   # only if composer.json changed
+php artisan migrate --force          # apply database changes
+php artisan optimize:clear           # forget settings/routes/views cached before the update
+php artisan optimize                 # cache the new ones
+```
+
+**Always run all of them after every update.** Skipping `migrate` or
+`optimize:clear` is the usual cause of "500 Server Error" or "Error while
+loading page" on pages that use new features. Super admin → **System health
+→ Deployment** says when either is missing. Use the full PHP 8.4 path (see
+below) for every command.
 
 ## Troubleshooting
 

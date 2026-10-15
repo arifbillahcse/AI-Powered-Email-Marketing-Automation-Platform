@@ -987,6 +987,7 @@ Test a restore occasionally.
 | Campaign can't launch: mailing address | Workspace address missing | Workspace settings → Mailing address. |
 | Feature shows "Soon" or a lock | Module off, or not in the plan | Platform owner: enable the module and/or add it to the plan. |
 | Invitation or password emails never arrive | System mail (`MAIL_*`) misconfigured or the cron isn't running | Fix `MAIL_*` settings; notifications are queued, so the cron must run. |
+| "500 Server Error" or "Error while loading page" right after an update | `migrate` or `optimize:clear` wasn't run after `git pull` | Run `php artisan migrate --force`, `php artisan optimize:clear`, `php artisan optimize`. System health → Deployment shows what's missing. |
 | Pages have no styling | Filament assets not published | `php artisan filament:assets`. |
 | Custom domain doesn't verify | CNAME missing or not yet propagated | Check with `dig CNAME app.youragency.com`; wait for DNS; make sure the host serves the domain with SSL. |
 | Lead finder says it isn't set up | `HUNTER_API_KEY` missing | Add the key to `.env`, run `php artisan optimize`. |

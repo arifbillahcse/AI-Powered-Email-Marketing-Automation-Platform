@@ -34,6 +34,7 @@ class SystemHealth
     {
         return [
             $this->database(),
+            $this->deployment(),
             $this->scheduler(),
             ...$this->queue(),
             $this->cache(),
@@ -58,6 +59,61 @@ class SystemHealth
         } catch (Throwable $exception) {
             return $this->check('Database', self::DANGER, 'Can\'t connect: '.$exception->getMessage());
         }
+    }
+
+    /**
+     * After an update: database changes not applied yet, or settings cached
+     * before the update (both break pages with a 500).
+     *
+     * @return array{label: string, status: string, detail: string}
+     */
+    protected function deployment(): array
+    {
+        $problems = [];
+
+        try {
+            $pending = $this->pendingMigrations();
+
+            if ($pending > 0) {
+                $problems[] = "{$pending} database ".str('update')->plural($pending).' not applied yet: run php artisan migrate --force.';
+            }
+        } catch (Throwable) {
+            // The database check above reports connection problems.
+        }
+
+        if ($this->configCacheIsStale()) {
+            $problems[] = 'Settings changed since they were cached: run php artisan optimize:clear && php artisan optimize.';
+        }
+
+        return $problems === []
+            ? $this->check('Deployment', self::OK, 'Database and cached settings are up to date.')
+            : $this->check('Deployment', self::DANGER, implode(' ', $problems));
+    }
+
+    public function pendingMigrations(): int
+    {
+        $migrator = app('migrator');
+        $files = array_keys($migrator->getMigrationFiles([database_path('migrations')]));
+        $ran = $migrator->repositoryExists() ? $migrator->getRepository()->getRan() : [];
+
+        return count(array_diff($files, $ran));
+    }
+
+    public function configCacheIsStale(): bool
+    {
+        if (! app()->configurationIsCached()) {
+            return false;
+        }
+
+        $cachedAt = (int) @filemtime(app()->getCachedConfigPath());
+
+        foreach (glob(config_path('*.php')) ?: [] as $file) {
+            if ((int) @filemtime($file) > $cachedAt) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -165,6 +165,17 @@ it('shows system health', function () {
     Livewire::test(SystemHealth::class)->assertDontSee('No heartbeat yet');
 });
 
+it('shows whether the last update was fully applied', function () {
+    $health = app(App\Services\Admin\SystemHealth::class);
+
+    expect($health->pendingMigrations())->toBe(0)
+        ->and($health->configCacheIsStale())->toBeFalse();
+
+    Livewire::test(SystemHealth::class)
+        ->assertSee('Deployment')
+        ->assertSee('Database and cached settings are up to date.');
+});
+
 it('flags workspaces with abusive sending and shows platform stats', function () {
     fakeTransport();
     ['workspace' => $workspace, 'mailbox' => $mailbox] = readyCampaign(20, mailbox: ['daily_limit' => 200]);

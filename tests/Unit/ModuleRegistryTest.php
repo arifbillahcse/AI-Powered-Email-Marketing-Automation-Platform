@@ -19,3 +19,11 @@ it('is available through the modules() helper', function () {
 it('rejects unknown modules', function () {
     modules()->enabled('teleportation');
 })->throws(InvalidArgumentException::class);
+
+it('treats unknown modules as off in production instead of failing the page', function () {
+    // e.g. a config cache from before an update that added the module.
+    app()->detectEnvironment(fn (): string => 'production');
+
+    expect(modules()->enabled('teleportation'))->toBeFalse()
+        ->and(modules()->disabled('teleportation'))->toBeTrue();
+});
