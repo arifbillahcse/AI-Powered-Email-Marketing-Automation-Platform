@@ -3,10 +3,12 @@
 use App\Enums\InboxMessageStatus;
 use App\Enums\LeadActivityType;
 use App\Enums\LeadStatus;
+use App\Enums\MailEncryption;
 use App\Enums\WorkspaceRole;
 use App\Filament\App\Resources\InboxThreads\Pages\ViewInboxThread;
 use App\Filament\App\Resources\Leads\Pages\ListLeads;
 use App\Filament\App\Resources\Leads\Pages\ViewLead;
+use App\Jobs\SyncMailboxInbox;
 use App\Models\EmailAccount;
 use App\Models\InboxMessage;
 use App\Models\InboxThread;
@@ -14,8 +16,10 @@ use App\Models\Lead;
 use App\Models\Workspace;
 use App\Services\Inbox\InboundMailProcessor;
 use App\Services\Leads\SuppressionList;
+use App\Services\Mail\Imap\ImapConnector;
 use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
+use Tests\Fakes\ScriptedImapStream;
 
 /**
  * @return array{mailbox: EmailAccount, lead: Lead}
@@ -154,4 +158,35 @@ it('hides the action from clients', function () {
 
     Livewire::test(ViewLead::class, ['record' => $lead->getRouteKey()])
         ->assertActionHidden('sendEmail');
+});
+
+it('picks up a reply on the first sync of a mailbox that only sent one-off emails', function () {
+    config(['outreach.mailboxes.allow_private_hosts' => true]);
+    fakeTransport();
+    $workspace = actingInWorkspace();
+    ['mailbox' => $mailbox, 'lead' => $lead] = directEmailSetup($workspace);
+    $mailbox->forceFill(['imap_encryption' => MailEncryption::Ssl])->save();
+
+    Livewire::test(ViewLead::class, ['record' => $lead->getRouteKey()])
+        ->callAction('sendEmail', data: ['email_account_id' => $mailbox->id, 'subject' => 'Hello', 'body' => 'Hi Jane']);
+
+    $sent = InboxMessage::sole();
+    $stream = new ScriptedImapStream([
+        '* OK IMAP ready',
+        'A001 OK LOGIN completed',
+        '* 41 EXISTS',
+        '* OK [UIDVALIDITY 5] UIDs valid',
+        '* OK [UIDNEXT 42] Predicted next UID',
+        'A002 OK [READ-ONLY] EXAMINE completed',
+        '* SEARCH 41',
+        'A003 OK SEARCH completed',
+        ...ScriptedImapStream::fetchResponse('A004', 41, rawEmail(['Subject' => 'Re: Hello', 'In-Reply-To' => "<{$sent->message_id}>"])),
+    ]);
+    app()->instance(ImapConnector::class, $stream->connector());
+
+    SyncMailboxInbox::dispatchSync($mailbox->id);
+
+    expect($stream->written)->toContain('A003 UID SEARCH SINCE '.now()->format('j-M-Y'))
+        ->and(InboxMessage::query()->where('direction', InboxMessage::INBOUND)->sole()->inbox_thread_id)->toBe($sent->inbox_thread_id)
+        ->and($mailbox->refresh()->imap_last_uid)->toBe(41);
 });

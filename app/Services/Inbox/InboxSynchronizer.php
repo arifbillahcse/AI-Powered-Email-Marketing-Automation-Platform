@@ -4,6 +4,7 @@ namespace App\Services\Inbox;
 
 use App\Models\EmailAccount;
 use App\Models\EmailMessage;
+use App\Models\InboxMessage;
 use App\Services\Mail\HostGuard;
 use App\Services\Mail\Imap\ImapClient;
 use App\Services\Mail\Imap\ImapConnector;
@@ -77,8 +78,9 @@ class InboxSynchronizer
      * UIDs to read this run, oldest first.
      *
      * The first sync (or after the server renumbered the folder) doesn't
-     * import the whole mailbox: it starts from the first campaign email
-     * this mailbox sent (at most `lookback_days` ago), or from now.
+     * import the whole mailbox: it starts from the first email this mailbox
+     * sent from the app, campaign or one-off (at most `lookback_days` ago),
+     * or from now.
      *
      * @param  array{uid_validity: ?int, uid_next: ?int, exists: int}  $folder
      * @return list<int>
@@ -89,7 +91,7 @@ class InboxSynchronizer
         $fresh = $mailbox->imap_last_uid === null || $mailbox->imap_uid_validity !== $folder['uid_validity'];
 
         if ($fresh) {
-            $firstSent = EmailMessage::query()->where('email_account_id', $mailbox->getKey())->whereNotNull('sent_at')->min('sent_at');
+            $firstSent = $this->firstSentAt($mailbox);
             $baseline = max(0, ($folder['uid_next'] ?? 1) - 1);
 
             $mailbox->forceFill(['imap_uid_validity' => $folder['uid_validity'], 'imap_last_uid' => $baseline])->save();
@@ -98,7 +100,7 @@ class InboxSynchronizer
                 return [];
             }
 
-            $since = CarbonImmutable::parse($firstSent)->max(now()->subDays((int) config('outreach.inbox.lookback_days')));
+            $since = $firstSent->max(now()->subDays((int) config('outreach.inbox.lookback_days')));
             $uids = $client->search('SINCE '.$since->format('j-M-Y'));
 
             if ($uids !== []) {
@@ -116,5 +118,23 @@ class InboxSynchronizer
         $uids = array_filter($client->search('UID '.($mailbox->imap_last_uid + 1).':*'), fn (int $uid): bool => $uid > $mailbox->imap_last_uid);
 
         return array_slice(array_values($uids), 0, $limit);
+    }
+
+    /**
+     * When this mailbox first sent from the app: a campaign email or a
+     * Unibox / one-off email, whichever came first.
+     */
+    protected function firstSentAt(EmailAccount $mailbox): ?CarbonImmutable
+    {
+        $dates = array_filter([
+            EmailMessage::query()->where('email_account_id', $mailbox->getKey())->whereNotNull('sent_at')->min('sent_at'),
+            InboxMessage::query()
+                ->where('email_account_id', $mailbox->getKey())
+                ->where('direction', InboxMessage::OUTBOUND)
+                ->whereNotNull('sent_at')
+                ->min('sent_at'),
+        ]);
+
+        return $dates === [] ? null : collect($dates)->map(fn ($date): CarbonImmutable => CarbonImmutable::parse($date))->min();
     }
 }
