@@ -14,6 +14,29 @@ class Tag extends Model
      */
     protected $fillable = [
         'name',
+        'color',
+    ];
+
+    /**
+     * Badge colors a tag can have: the semantic Filament colors (see the
+     * style guide), so tags look right in light and dark mode.
+     *
+     * @var array<string, string>
+     */
+    public const COLORS = [
+        'gray' => 'Gray',
+        'primary' => 'Indigo',
+        'success' => 'Green',
+        'warning' => 'Amber',
+        'danger' => 'Red',
+        'info' => 'Blue',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'color' => 'gray',
     ];
 
     /**

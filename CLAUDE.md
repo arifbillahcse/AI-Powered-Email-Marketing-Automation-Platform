@@ -35,6 +35,13 @@ phase unless asked. Update the phase's status in `ROADMAP.md` when it's done.
 - `app/Policies/Concerns/AuthorizesWorkspaceRecords.php`: default policy for
   workspace-owned records (members view, everyone but Clients edit)
 - `app/Models/Lead.php` (+ `LeadList`, `Tag`, `Segment`, `LeadActivity`, `Suppression`)
+- Organizing leads: `LeadNote` (+ `LeadNotePolicy`: read all, edit own, admins delete;
+  `Leads/RelationManagers/NotesRelationManager`), `Tag.color` (`Tag::COLORS`, semantic
+  Filament colors; `Resources/Tags`), `leads.starred`, `leads.follow_up_on` (a date in the
+  workspace time zone) via `Services/Leads/FollowUps` (`leads:follow-ups` hourly, announces
+  once from 08:00 local). Row/page actions in `Filament/App/Actions/` (`AddLeadNoteAction`,
+  `TagLeadAction`, `ToggleLeadStarAction`, `SetLeadFollowUpAction`, `LeadFollowUpDoneAction`).
+  `Support/SafeLink` decides which custom-field values become links (http(s) and email only)
 - `app/Services/Leads/`: `SuppressionList` (do-not-contact; sending must use
   `Lead::whereNotSuppressed()`), `SegmentQuery` (segment rules → query),
   `LeadBulkOperations` (chunked list/tag changes for huge selections)

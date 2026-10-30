@@ -104,7 +104,7 @@ codes somewhere safe.
 
 - **Left sidebar:** the main menu, in four groups:
   - **Outreach:** Unibox, Campaigns, Leads, Lead finder, Lists, AI review,
-    AI prompts, Message templates, Tasks, Segments, Suppression list.
+    AI prompts, Message templates, Tags, Tasks, Segments, Suppression list.
   - **Infrastructure:** Email accounts, Domains, Warmup, Inbox placement.
   - **Insights:** Analytics.
   - **Settings:** Clients (agencies), Billing, Team, AI settings,
@@ -306,6 +306,12 @@ after changing DNS, and whenever replies suddenly drop.
   from list*, *Add tags*, *Remove tags*, *Change status*, *Add to
   suppression list*, *Delete*. Bulk actions work on huge selections in the
   background.
+- **Star, follow-up and notes in the table:** click the star at the start of
+  a row to mark an important lead. Filters: *Starred*, *Follow-up due* and
+  *Note contains*. The number on the Leads menu item is how many follow-ups
+  are due today.
+- **Row buttons:** *Write email*, *Add note*, and in the ⋮ menu *Tags*, *Star
+  lead*, *Follow up* and *Follow-up done*.
 - **Export:** download the current selection as CSV.
 
 ### The lead page
@@ -316,6 +322,26 @@ bounced, tasks done, status changes. From here you can:
 
 - **Write email:** a personal one-off email outside any campaign. See
   *Writing to one lead* below.
+- **Add note:** write down what you found on their website, who you
+  contacted and what to do next. Notes are listed under the timeline (newest
+  first) with who wrote them and when; the latest one also shows in the
+  Status box. Everyone in the workspace reads them, you edit your own, and
+  owners and admins can delete any. Notes are never sent to the lead.
+  Clients (the read-only role) can read notes but not write them.
+- **Organize → Tags:** set the lead's tags without opening the edit form.
+  New tags are gray; give them a color under **Outreach → Tags** (gray,
+  indigo, green, amber, red or blue). Renaming or deleting a tag there
+  changes it on every lead that has it.
+- **Organize → Star lead:** marks an important lead (the filled star in the
+  table).
+- **Organize → Follow up:** pick the day to come back to this lead. That
+  morning (08:00 in the workspace time zone) you get a notification, the
+  lead appears under the *Follow-up due* filter and in the Leads menu count,
+  and it turns red once overdue. Choose **Follow-up done** when finished.
+  Each note and follow-up is also logged on the timeline.
+- **Custom fields:** values that start with `https://` or `http://` are
+  links that open in a new tab, and email addresses open your mail app.
+  Anything else (including `javascript:` text) stays plain text.
 - **Export personal data / Erase personal data:** see [2.20](#220-privacy-requests-gdpr).
 
 ### Writing to one lead

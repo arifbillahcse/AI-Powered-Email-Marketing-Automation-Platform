@@ -33,6 +33,9 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
     case Complained = 'complained';
     case Enriched = 'enriched';
     case TaskCompleted = 'task_completed';
+    case NoteAdded = 'note_added';
+    case FollowUpSet = 'follow_up_set';
+    case FollowUpDone = 'follow_up_done';
 
     public function getLabel(): string
     {
@@ -58,6 +61,9 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::Complained => 'Spam complaint',
             self::Enriched => 'Enriched',
             self::TaskCompleted => 'Task done',
+            self::NoteAdded => 'Note',
+            self::FollowUpSet => 'Follow-up set',
+            self::FollowUpDone => 'Follow-up done',
         };
     }
 
@@ -69,7 +75,8 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::EmailSent => 'primary',
             self::EmailOpened, self::LinkClicked => 'info',
             self::Unsubscribed => 'danger',
-            self::StatusChanged => 'info',
+            self::StatusChanged, self::FollowUpSet => 'info',
+            self::FollowUpDone => 'success',
             self::Replied, self::ReplySent => 'success',
             default => 'gray',
         };
@@ -94,6 +101,9 @@ enum LeadActivityType: string implements HasColor, HasIcon, HasLabel
             self::Complained => Heroicon::OutlinedShieldExclamation,
             self::Enriched => Heroicon::OutlinedSparkles,
             self::TaskCompleted => Heroicon::OutlinedClipboardDocumentCheck,
+            self::NoteAdded => Heroicon::OutlinedPencilSquare,
+            self::FollowUpSet => Heroicon::OutlinedBell,
+            self::FollowUpDone => Heroicon::OutlinedCheckCircle,
             self::Replied, self::AutoReplied => Heroicon::OutlinedChatBubbleLeftRight,
             self::ReplySent => Heroicon::OutlinedArrowUturnLeft,
         };

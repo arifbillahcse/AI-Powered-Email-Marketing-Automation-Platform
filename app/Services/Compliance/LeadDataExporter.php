@@ -32,6 +32,11 @@ class LeadDataExporter
             ],
             'lists' => $lead->lists()->pluck('name')->all(),
             'tags' => $lead->tags()->pluck('name')->all(),
+            'starred' => $lead->starred,
+            'follow_up_on' => $lead->follow_up_on?->toDateString(),
+            'notes' => $lead->notes()->with('author:id,name')->reorder('id')->get()
+                ->map(fn ($note): array => ['note' => $note->body, 'by' => $note->author?->name, 'at' => $note->created_at?->toIso8601String()])
+                ->all(),
             'campaigns' => DB::table('campaign_leads')
                 ->join('campaigns', 'campaigns.id', '=', 'campaign_leads.campaign_id')
                 ->where('campaign_leads.lead_id', $leadId)

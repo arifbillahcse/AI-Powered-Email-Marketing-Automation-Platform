@@ -29,6 +29,9 @@ Schedule::command('placement:check')->everyFiveMinutes()->withoutOverlapping(10)
 // Archive raw open/click events older than ARCHIVE_EVENTS_AFTER_DAYS.
 Schedule::command('events:archive')->hourly()->withoutOverlapping(30);
 
+// Lead follow-ups that came due (announced in each workspace's morning).
+Schedule::command('leads:follow-ups')->hourly()->withoutOverlapping(10);
+
 // Agencies: weekly (Mondays) and monthly (1st) client report emails.
 Schedule::command('reports:send')->dailyAt('07:00');
 

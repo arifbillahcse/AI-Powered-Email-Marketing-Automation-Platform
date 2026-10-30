@@ -75,6 +75,9 @@ hosting (no Redis, no Node.js, no long-running processes).
 - **Write to one lead:** a one-click composer on every lead (smart mailbox
   choice, greeting typed, Ctrl+Enter to send) with reusable **message
   templates**.
+- **Organize leads:** notes (who you contacted, what's next), colored tags,
+  a star for important leads, and follow-up dates with a morning reminder.
+  Links in a lead's custom fields are clickable.
 - **Analytics:** sent, open, click, reply, bounce and unsubscribe rates,
   daily chart, breakdowns per campaign, step and mailbox, mailbox health
   scores, CSV export.

@@ -60,6 +60,10 @@ class Lead extends Model
         'verification_status' => null,
         'verification_reason' => null,
         'verified_at' => null,
+        'starred' => false,
+        'follow_up_on' => null,
+        'follow_up_by' => null,
+        'follow_up_notified_at' => null,
     ];
 
     protected function casts(): array
@@ -70,6 +74,9 @@ class Lead extends Model
             'last_contacted_at' => 'datetime',
             'verification_status' => EmailVerificationStatus::class,
             'verified_at' => 'datetime',
+            'starred' => 'boolean',
+            'follow_up_on' => 'date',
+            'follow_up_notified_at' => 'datetime',
         ];
     }
 
@@ -132,6 +139,14 @@ class Lead extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'lead_tag');
+    }
+
+    /**
+     * @return HasMany<LeadNote, $this>
+     */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(LeadNote::class)->latest('created_at')->latest('id');
     }
 
     /**

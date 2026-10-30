@@ -4,15 +4,24 @@ namespace App\Filament\App\Resources\Leads;
 
 use App\Enums\EmailVerificationStatus;
 use App\Enums\LeadStatus;
+use App\Filament\App\Actions\AddLeadNoteAction;
+use App\Filament\App\Actions\LeadFollowUpDoneAction;
 use App\Filament\App\Actions\SendLeadEmailAction;
+use App\Filament\App\Actions\SetLeadFollowUpAction;
+use App\Filament\App\Actions\TagLeadAction;
+use App\Filament\App\Actions\ToggleLeadStarAction;
 use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Filament\App\Resources\Leads\Pages\CreateLead;
 use App\Filament\App\Resources\Leads\Pages\EditLead;
 use App\Filament\App\Resources\Leads\Pages\ListLeads;
 use App\Filament\App\Resources\Leads\Pages\ViewLead;
+use App\Filament\App\Resources\Leads\RelationManagers\NotesRelationManager;
 use App\Models\Lead;
+use App\Models\LeadNote;
 use App\Models\Segment;
 use App\Models\Tag;
+use App\Models\Workspace;
+use App\Services\Leads\FollowUps;
 use App\Services\Leads\SuppressionList;
 use App\Support\Timezones;
 use BackedEnum;
@@ -25,9 +34,9 @@ use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -35,10 +44,13 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
@@ -56,6 +68,29 @@ class LeadResource extends Resource
     protected static ?int $navigationSort = 10;
 
     protected static ?string $recordTitleAttribute = 'email';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $workspace = Filament::getTenant();
+
+        if (! $workspace instanceof Workspace) {
+            return null;
+        }
+
+        $due = app(FollowUps::class)->due($workspace)->count();
+
+        return $due > 0 ? (string) $due : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'Follow-ups due';
+    }
 
     protected static function workspaceId(): ?int
     {
@@ -155,14 +190,25 @@ class LeadResource extends Resource
                                 ->badge()
                                 ->color(fn (string $state): string => str_starts_with($state, 'Suppressed') ? 'danger' : 'success'),
                             TextEntry::make('lists.name')->label('Lists')->badge()->placeholder('None'),
-                            TextEntry::make('tags.name')->label('Tags')->badge()->color('gray')->placeholder('None'),
+                            ViewEntry::make('tags')->label('Tags')->view('filament.app.leads.tags', ['empty' => 'None']),
+                            TextEntry::make('follow_up_on')
+                                ->label('Follow-up')
+                                ->date('M j, Y')
+                                ->badge()
+                                ->color(fn (Lead $record): string => static::followUpColor($record))
+                                ->placeholder('None'),
+                            TextEntry::make('latest_note')
+                                ->label('Latest note')
+                                ->state(fn (Lead $record): ?string => $record->notes()->value('body'))
+                                ->limit(160)
+                                ->placeholder('No notes yet. Use Add note.'),
                         ]),
                 ]),
             Section::make('Custom fields')
                 ->columnSpanFull()
                 ->visible(fn (Lead $record): bool => filled($record->custom_fields))
                 ->schema([
-                    KeyValueEntry::make('custom_fields')->hiddenLabel()->keyLabel('Variable')->valueLabel('Value'),
+                    ViewEntry::make('custom_fields')->hiddenLabel()->view('filament.app.leads.custom-fields'),
                 ]),
             Section::make('Activity')
                 ->columnSpanFull()
@@ -179,6 +225,12 @@ class LeadResource extends Resource
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->with('tags')
+                ->withCount('notes')
+                ->addSelect(['latest_note' => LeadNote::query()
+                    ->select('body')
+                    ->whereColumn('lead_notes.lead_id', 'leads.id')
+                    ->latest('id')
+                    ->limit(1)])
                 ->addSelect(['is_suppressed' => DB::table('suppressions')
                     ->selectRaw('count(*)')
                     ->whereColumn('suppressions.workspace_id', 'leads.workspace_id')
@@ -186,6 +238,24 @@ class LeadResource extends Resource
                         ->where(fn ($q) => $q->where('suppressions.type', 'email')->whereColumn('suppressions.value', 'leads.email'))
                         ->orWhere(fn ($q) => $q->where('suppressions.type', 'domain')->whereColumn('suppressions.value', 'leads.email_domain')))]))
             ->columns([
+                IconColumn::make('starred')
+                    ->label('')
+                    ->boolean()
+                    ->trueIcon(Heroicon::Star)
+                    ->falseIcon(Heroicon::OutlinedStar)
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->tooltip(fn (Lead $record): string => $record->starred ? 'Starred. Click to remove.' : 'Click to star this lead')
+                    ->sortable()
+                    ->action(function (Lead $record): void {
+                        if (! Auth::user()->can('update', $record)) {
+                            Notification::make()->title('You can\'t change leads in this workspace')->danger()->send();
+
+                            return;
+                        }
+
+                        $record->forceFill(['starred' => ! $record->starred])->save();
+                    }),
                 TextColumn::make('email')
                     ->label('Lead')
                     ->description(fn (Lead $record): ?string => $record->fullName() ?: null)
@@ -205,11 +275,28 @@ class LeadResource extends Resource
                     ->tooltip(fn (Lead $record): ?string => $record->verification_reason)
                     ->placeholder('Not checked')
                     ->toggleable(),
-                TextColumn::make('tags.name')
+                ViewColumn::make('tags')
                     ->label('Tags')
+                    ->view('filament.app.leads.tags')
+                    ->viewData(['limit' => 3]),
+                TextColumn::make('follow_up_on')
+                    ->label('Follow-up')
+                    ->badge()
+                    ->date('M j')
+                    ->color(fn (Lead $record): string => static::followUpColor($record))
+                    ->description(fn (Lead $record): ?string => static::followUpOverdue($record) ? 'Overdue' : null)
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(),
+                TextColumn::make('notes_count')
+                    ->label('Notes')
                     ->badge()
                     ->color('gray')
-                    ->limitList(3),
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->state(fn (Lead $record): ?int => $record->notes_count ?: null)
+                    ->tooltip(fn (Lead $record): ?string => $record->latest_note ? str($record->latest_note)->squish()->limit(200)->toString() : null)
+                    ->sortable()
+                    ->toggleable(),
                 IconColumn::make('is_suppressed')
                     ->label('Suppressed')
                     ->getStateUsing(fn (Lead $record): bool => (bool) $record->is_suppressed)
@@ -252,6 +339,36 @@ class LeadResource extends Resource
                             ? $query->whereIn('leads.id', $segment->leadsQuery()->select('leads.id'))
                             : $query;
                     }),
+                TernaryFilter::make('starred')
+                    ->label('Starred')
+                    ->queries(
+                        true: fn (Builder $query) => $query->where('leads.starred', true),
+                        false: fn (Builder $query) => $query->where('leads.starred', false),
+                    ),
+                Filter::make('follow_up_due')
+                    ->label('Follow-up due')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query
+                        ->whereNotNull('leads.follow_up_on')
+                        ->where('leads.follow_up_on', '<=', app(FollowUps::class)->today(Filament::getTenant()))),
+                Filter::make('note')
+                    ->label('Note contains')
+                    ->schema([TextInput::make('note')->label('Note contains')->placeholder('called, no careers page, CEO')])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $term = trim((string) ($data['note'] ?? ''));
+
+                        if ($term === '') {
+                            return $query;
+                        }
+
+                        $like = '%'.addcslashes(mb_strtolower($term), '\\%_').'%';
+
+                        return $query->whereExists(fn ($sub) => $sub->selectRaw('1')
+                            ->from('lead_notes')
+                            ->whereColumn('lead_notes.lead_id', 'leads.id')
+                            ->whereRaw('lower(lead_notes.body) like ?', [$like]));
+                    })
+                    ->indicateUsing(fn (array $data): ?string => filled($data['note'] ?? null) ? 'Note contains "'.$data['note'].'"' : null),
                 TernaryFilter::make('suppressed')
                     ->label('Suppressed')
                     ->queries(
@@ -264,13 +381,45 @@ class LeadResource extends Resource
             ->recordActions([
                 // One click to write to a lead while scrolling the list.
                 SendLeadEmailAction::make()->iconButton()->tooltip('Write email'),
+                AddLeadNoteAction::make()->iconButton()->tooltip('Add note'),
                 ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
+                    TagLeadAction::make(),
+                    ToggleLeadStarAction::make(),
+                    SetLeadFollowUpAction::make(),
+                    LeadFollowUpDoneAction::make(),
                     DeleteAction::make(),
                 ]),
             ])
             ->toolbarActions(LeadBulkActions::all());
+    }
+
+    /**
+     * Gray for a future follow-up, amber for today, red when overdue.
+     */
+    public static function followUpColor(Lead $lead): string
+    {
+        if ($lead->follow_up_on === null) {
+            return 'gray';
+        }
+
+        $today = app(FollowUps::class)->today(Filament::getTenant());
+        $on = $lead->follow_up_on->toDateString();
+
+        return $on < $today ? 'danger' : ($on === $today ? 'warning' : 'gray');
+    }
+
+    public static function followUpOverdue(Lead $lead): bool
+    {
+        return $lead->follow_up_on !== null && $lead->follow_up_on->toDateString() < app(FollowUps::class)->today(Filament::getTenant());
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            NotesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
