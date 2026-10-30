@@ -3,30 +3,48 @@
     $lead = $getRecord();
 @endphp
 
-<div class="overflow-hidden rounded-lg ring-1 ring-gray-200 dark:ring-white/10">
-    <table class="w-full divide-y divide-gray-200 text-start text-sm dark:divide-white/10">
-        <thead class="bg-gray-50 dark:bg-white/5">
+{{-- Plain scoped CSS on purpose: see the note in timeline.blade.php. --}}
+<style>
+    .lead-fields { width: 100%; border-collapse: collapse; font-size: .875rem; line-height: 1.25rem; }
+    .lead-fields th { padding: .5rem 1rem; text-align: left; font-weight: 600; color: var(--gray-950, #030712); background: var(--gray-50, #f9fafb); border-bottom: 1px solid var(--gray-200, #e5e7eb); }
+    .lead-fields td { padding: .5rem 1rem; vertical-align: top; color: var(--gray-950, #030712); border-bottom: 1px solid var(--gray-200, #e5e7eb); word-break: break-word; }
+    .lead-fields tr:last-child td { border-bottom: 0; }
+    .lead-fields th:first-child, .lead-fields td:first-child { width: 14rem; white-space: nowrap; }
+    .lead-fields td:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .75rem; }
+    .lead-fields a { display: inline-flex; align-items: center; gap: .25rem; color: var(--primary-600, #4f46e5); text-decoration: none; }
+    .lead-fields a:hover { text-decoration: underline; }
+    .lead-fields a svg { width: .875rem; height: .875rem; flex: none; }
+    .lead-fields-wrap { overflow-x: auto; border-radius: .5rem; box-shadow: 0 0 0 1px var(--gray-200, #e5e7eb); }
+    .dark .lead-fields th { color: #fff; background: rgba(255, 255, 255, .05); border-bottom-color: rgba(255, 255, 255, .1); }
+    .dark .lead-fields td { color: #fff; border-bottom-color: rgba(255, 255, 255, .1); }
+    .dark .lead-fields a { color: var(--primary-400, #818cf8); }
+    .dark .lead-fields-wrap { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1); }
+</style>
+
+<div class="lead-fields-wrap">
+    <table class="lead-fields">
+        <thead>
             <tr>
-                <th class="px-4 py-2 text-start font-medium text-gray-950 dark:text-white">Variable</th>
-                <th class="px-4 py-2 text-start font-medium text-gray-950 dark:text-white">Value</th>
+                <th>Variable</th>
+                <th>Value</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+        <tbody>
             @foreach ($lead->custom_fields ?? [] as $key => $value)
                 @php($link = \App\Support\SafeLink::parse((string) $value))
                 <tr>
-                    <td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-gray-950 dark:text-white">{{ $key }}</td>
-                    <td class="break-all px-4 py-2 text-gray-950 dark:text-white">
+                    <td>{{ $key }}</td>
+                    <td>
                         @if ($link)
+                            @php($external = str_starts_with($link['href'], 'http'))
                             <a
                                 href="{{ $link['href'] }}"
-                                @if (str_starts_with($link['href'], 'http')) target="_blank" rel="noopener noreferrer" @endif
+                                @if ($external) target="_blank" rel="noopener noreferrer" @endif
                                 title="{{ $value }}"
-                                class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
                             >
                                 {{ $link['label'] }}
-                                @if (str_starts_with($link['href'], 'http'))
-                                    <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" class="size-3.5" />
+                                @if ($external)
+                                    <x-filament::icon icon="heroicon-m-arrow-top-right-on-square" />
                                 @endif
                             </a>
                         @else
