@@ -12,6 +12,7 @@ use App\Filament\App\Resources\Concerns\ScopedToWorkspace;
 use App\Models\Campaign;
 use App\Models\CampaignStepVariant;
 use App\Models\EmailAccount;
+use App\Models\LeadList;
 use App\Models\Workspace;
 use App\Services\Billing\Entitlements;
 use App\Services\Campaigns\CampaignAudience;
@@ -277,7 +278,8 @@ class CampaignResource extends Resource
             ->schema([
                 Select::make('leadLists')
                     ->label('Lists')
-                    ->relationship('leadLists', 'name', fn (Builder $query) => $query->where('lead_lists.workspace_id', static::workspaceId()))
+                    ->relationship('leadLists', 'name', fn (Builder $query) => $query->where('lead_lists.workspace_id', static::workspaceId())->withCount('leads'))
+                    ->getOptionLabelFromRecordUsing(fn (LeadList $record): string => "{$record->name} (".Number::format($record->leads_count).' '.str('lead')->plural($record->leads_count).')')
                     ->multiple()
                     ->preload(),
                 Select::make('segments')

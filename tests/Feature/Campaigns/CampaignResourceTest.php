@@ -143,3 +143,17 @@ it('blocks another workspace\'s campaign', function () {
 
     $this->actingAs($user)->get("/app/{$workspace->slug}/campaigns/{$theirs->id}/edit")->assertNotFound();
 });
+
+it('shows how many leads each list has when choosing the audience', function () {
+    $workspace = actingInWorkspace();
+    $big = LeadList::factory()->for($workspace)->create(['name' => 'Hosting AU']);
+    $single = LeadList::factory()->for($workspace)->create(['name' => 'One lead']);
+    $empty = LeadList::factory()->for($workspace)->create(['name' => 'Empty list']);
+    $big->leads()->attach(Lead::factory()->for($workspace)->count(3)->create()->pluck('id'));
+    $single->leads()->attach(Lead::factory()->for($workspace)->create()->id);
+
+    Livewire::test(CreateCampaign::class)
+        ->assertSee('Hosting AU (3 leads)', false)
+        ->assertSee('One lead (1 lead)', false)
+        ->assertSee('Empty list (0 leads)', false);
+});

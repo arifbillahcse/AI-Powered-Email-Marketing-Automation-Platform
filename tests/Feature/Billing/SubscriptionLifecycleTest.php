@@ -71,7 +71,7 @@ it('activates the plan when its invoice is paid', function () {
         ->and($invoice->meta['transaction_id'])->toBe('pi_123')
         ->and($subscription->status)->toBe(SubscriptionStatus::Active)
         ->and($subscription->trial_ends_at)->toBeNull()
-        ->and($subscription->current_period_end->isSameDay(now()->addMonth()))->toBeTrue()
+        ->and($subscription->current_period_end->isSameDay(now()->addMonthNoOverflow()))->toBeTrue()
         ->and($owner->notifications()->count())->toBe(1);
 });
 
@@ -100,7 +100,7 @@ it('renews, then marks overdue, then expires an unpaid subscription', function (
     // Paying after expiry starts a fresh period from today.
     $manager->markPaid($renewal);
     expect($subscription->refresh()->status)->toBe(SubscriptionStatus::Active)
-        ->and($subscription->current_period_end->isSameDay(now()->addMonth()))->toBeTrue()
+        ->and($subscription->current_period_end->isSameDay(now()->addMonthNoOverflow()))->toBeTrue()
         ->and($renewal->refresh()->period_start->isSameDay(now()))->toBeTrue();
 });
 
