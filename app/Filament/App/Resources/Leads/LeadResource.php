@@ -52,6 +52,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
@@ -258,11 +259,14 @@ class LeadResource extends Resource
                     }),
                 TextColumn::make('email')
                     ->label('Lead')
-                    ->description(fn (Lead $record): ?string => $record->fullName() ?: null)
+                    ->description(fn (Lead $record): ?string => static::shortText($record->fullName()))
                     ->searchable(['email', 'first_name', 'last_name'])
                     ->sortable(),
                 TextColumn::make('company')
-                    ->description(fn (Lead $record): ?string => $record->title)
+                    // Scraped names can be whole sentences: keep rows short, full text on hover.
+                    ->formatStateUsing(fn (?string $state): ?string => static::shortText($state))
+                    ->tooltip(fn (Lead $record): ?string => static::isShortened($record->company) ? $record->company : null)
+                    ->description(fn (Lead $record): ?string => static::shortText($record->title))
                     ->searchable()
                     ->sortable()
                     ->placeholder('—'),
@@ -393,6 +397,24 @@ class LeadResource extends Resource
                 ]),
             ])
             ->toolbarActions(LeadBulkActions::all());
+    }
+
+    /** Words shown for free text in table rows (company, title, name). */
+    public const TABLE_WORDS = 15;
+
+    /**
+     * The first 15 words, so one long value can't make a row very tall.
+     */
+    public static function shortText(?string $value, int $words = self::TABLE_WORDS): ?string
+    {
+        $value = Str::squish((string) $value);
+
+        return $value === '' ? null : Str::words($value, $words, '…');
+    }
+
+    public static function isShortened(?string $value, int $words = self::TABLE_WORDS): bool
+    {
+        return static::shortText($value, $words) !== (Str::squish((string) $value) ?: null);
     }
 
     /**

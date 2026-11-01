@@ -165,3 +165,46 @@ it('blocks another workspace\'s lead by URL', function () {
 
     $this->actingAs($user)->get("/app/{$workspace->slug}/leads/{$theirs->id}")->assertNotFound();
 });
+
+it('keeps long company names, titles and names to 15 words in the table', function () {
+    $workspace = actingInWorkspace();
+    $words = fn (string $prefix, int $count): string => collect(range(1, $count))->map(fn (int $n): string => "{$prefix}{$n}")->implode(' ');
+    $lead = Lead::factory()->for($workspace)->create([
+        'company' => $words('co', 22),
+        'title' => $words('ti', 20),
+        'first_name' => $words('na', 18),
+        'last_name' => '',
+    ]);
+    $short = Lead::factory()->for($workspace)->create(['company' => 'Acme Hosting', 'title' => 'CEO']);
+
+    $html = Livewire::test(ListLeads::class)
+        ->assertCanSeeTableRecords([$lead, $short])
+        ->assertSee($words('ti', 15).'…')
+        ->assertDontSee('ti16')
+        ->assertSee($words('na', 15).'…')
+        ->assertDontSee('na16')
+        ->assertSee('Acme Hosting')
+        ->html();
+
+    // The company cell shows 15 words; the full name is only the hover tooltip.
+    expect($html)->toMatch('/>\s*'.preg_quote($words('co', 15), '/').'…\s*</')
+        ->not->toMatch('/>\s*[^<]*co16[^<]*</')
+        ->toContain($words('co', 22));
+
+    expect(LeadResource::shortText($words('co', 15)))->toBe($words('co', 15))
+        ->and(LeadResource::isShortened($words('co', 15)))->toBeFalse()
+        ->and(LeadResource::isShortened($words('co', 16)))->toBeTrue()
+        ->and(LeadResource::shortText('  '))->toBeNull()
+        ->and(LeadResource::shortText(null))->toBeNull();
+});
+
+it('still searches the full company name in the table', function () {
+    $workspace = actingInWorkspace();
+    $lead = Lead::factory()->for($workspace)->create(['company' => str_repeat('hosting ', 20).'needle']);
+    $other = Lead::factory()->for($workspace)->create(['company' => 'Something else']);
+
+    Livewire::test(ListLeads::class)
+        ->searchTable('needle')
+        ->assertCanSeeTableRecords([$lead])
+        ->assertCanNotSeeTableRecords([$other]);
+});
