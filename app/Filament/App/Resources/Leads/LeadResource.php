@@ -400,10 +400,10 @@ class LeadResource extends Resource
     }
 
     /** Words shown for free text in table rows (company, title, name). */
-    public const TABLE_WORDS = 15;
+    public const TABLE_WORDS = 9;
 
     /**
-     * The first 15 words, so one long value can't make a row very tall.
+     * The first 9 words, so one long value can't make a row very tall.
      */
     public static function shortText(?string $value, int $words = self::TABLE_WORDS): ?string
     {

@@ -166,7 +166,7 @@ it('blocks another workspace\'s lead by URL', function () {
     $this->actingAs($user)->get("/app/{$workspace->slug}/leads/{$theirs->id}")->assertNotFound();
 });
 
-it('keeps long company names, titles and names to 15 words in the table', function () {
+it('keeps long company names, titles and names to 9 words in the table', function () {
     $workspace = actingInWorkspace();
     $words = fn (string $prefix, int $count): string => collect(range(1, $count))->map(fn (int $n): string => "{$prefix}{$n}")->implode(' ');
     $lead = Lead::factory()->for($workspace)->create([
@@ -179,21 +179,21 @@ it('keeps long company names, titles and names to 15 words in the table', functi
 
     $html = Livewire::test(ListLeads::class)
         ->assertCanSeeTableRecords([$lead, $short])
-        ->assertSee($words('ti', 15).'…')
-        ->assertDontSee('ti16')
-        ->assertSee($words('na', 15).'…')
-        ->assertDontSee('na16')
+        ->assertSee($words('ti', 9).'…')
+        ->assertDontSee('ti10')
+        ->assertSee($words('na', 9).'…')
+        ->assertDontSee('na10')
         ->assertSee('Acme Hosting')
         ->html();
 
-    // The company cell shows 15 words; the full name is only the hover tooltip.
-    expect($html)->toMatch('/>\s*'.preg_quote($words('co', 15), '/').'…\s*</')
-        ->not->toMatch('/>\s*[^<]*co16[^<]*</')
+    // The company cell shows 9 words; the full name is only the hover tooltip.
+    expect($html)->toMatch('/>\s*'.preg_quote($words('co', 9), '/').'…\s*</')
+        ->not->toMatch('/>\s*[^<]*co10[^<]*</')
         ->toContain($words('co', 22));
 
-    expect(LeadResource::shortText($words('co', 15)))->toBe($words('co', 15))
-        ->and(LeadResource::isShortened($words('co', 15)))->toBeFalse()
-        ->and(LeadResource::isShortened($words('co', 16)))->toBeTrue()
+    expect(LeadResource::shortText($words('co', 9)))->toBe($words('co', 9))
+        ->and(LeadResource::isShortened($words('co', 9)))->toBeFalse()
+        ->and(LeadResource::isShortened($words('co', 10)))->toBeTrue()
         ->and(LeadResource::shortText('  '))->toBeNull()
         ->and(LeadResource::shortText(null))->toBeNull();
 });
