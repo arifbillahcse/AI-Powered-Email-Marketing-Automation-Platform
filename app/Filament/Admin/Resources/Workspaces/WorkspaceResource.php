@@ -155,7 +155,7 @@ class WorkspaceResource extends Resource
                 'plan_id' => $record->subscription?->plan_id,
                 'interval' => $record->subscription?->interval->value ?? BillingInterval::Monthly->value,
                 'status' => $record->subscription?->status->value ?? SubscriptionStatus::Active->value,
-                'period_end' => $record->subscription?->current_period_end ?? $record->subscription?->trial_ends_at ?? now()->addMonth(),
+                'period_end' => $record->subscription?->current_period_end ?? $record->subscription?->trial_ends_at ?? BillingInterval::Monthly->addTo(now()),
             ])
             ->schema([
                 Select::make('plan_id')->label('Plan')->options(fn (): array => Plan::query()->orderBy('sort')->pluck('name', 'id')->all())->required(),

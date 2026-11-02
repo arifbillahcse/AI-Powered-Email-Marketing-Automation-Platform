@@ -40,7 +40,7 @@ class MailboxTransportFactory
             $transport->setAuthenticators([new XOAuth2Authenticator]);
             $transport->setPassword(app(MailboxOAuth::class)->accessToken($account));
         } else {
-            $transport->setPassword((string) $account->smtp_password);
+            $transport->setPassword($account->smtpPassword());
         }
 
         $stream = $transport->getStream();

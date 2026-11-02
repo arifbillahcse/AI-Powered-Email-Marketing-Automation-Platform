@@ -5,7 +5,10 @@ namespace App\Models;
 use App\Enums\EmailAccountStatus;
 use App\Enums\MailEncryption;
 use App\Enums\MailProvider;
+use App\Services\Mail\MailboxConnectionException;
+use Closure;
 use Database\Factories\EmailAccountFactory;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -208,9 +211,38 @@ class EmailAccount extends Model
         return $this->imap_username ?: $this->smtpUsername();
     }
 
+    /**
+     * The saved SMTP password. When it can't be decrypted (usually because
+     * the app's APP_KEY changed after it was saved) this is a normal mailbox
+     * connection problem, shown on the mailbox, instead of a crash.
+     *
+     * @throws MailboxConnectionException
+     */
+    public function smtpPassword(): string
+    {
+        return $this->readSecret(fn (): ?string => $this->smtp_password);
+    }
+
+    /**
+     * @throws MailboxConnectionException
+     */
     public function imapPassword(): string
     {
-        return (string) ($this->imap_password ?: $this->smtp_password);
+        return $this->readSecret(fn (): ?string => $this->imap_password ?: $this->smtp_password);
+    }
+
+    /**
+     * @param  Closure(): ?string  $read
+     *
+     * @throws MailboxConnectionException
+     */
+    protected function readSecret(Closure $read): string
+    {
+        try {
+            return (string) $read();
+        } catch (DecryptException) {
+            throw new MailboxConnectionException('The saved password can\'t be read (the app\'s encryption key probably changed). Open this mailbox and enter its password again.');
+        }
     }
 
     /**

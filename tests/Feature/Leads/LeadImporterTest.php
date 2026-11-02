@@ -111,3 +111,30 @@ it('ignores a list from another workspace', function () {
 
     expect($foreignList->leads()->count())->toBe(0);
 });
+
+it('takes the first sensible address from a cell with several and keeps the rest', function () {
+    importRows($this->user, [
+        ['Emails' => 'abuse@aeserver.com; rohit@aeserver.com; sales@aeserver.com; name@company.com', 'Name' => 'AEServer', 'Phones' => '+971 1'],
+        ['Emails' => 'info@solo.com', 'Name' => 'Solo', 'Phones' => ''],
+    ], [
+        'workspace_id' => $this->workspace->id,
+        'update_existing' => true,
+        'keep_extra_columns' => true,
+    ], ['email' => 'Emails', 'company' => 'Name']);
+
+    $multi = Lead::where('email', 'rohit@aeserver.com')->sole();
+    $solo = Lead::where('email', 'info@solo.com')->sole();
+
+    expect($multi->company)->toBe('AEServer')
+        ->and($multi->custom_fields)->toBe(['phones' => '+971 1', 'other_emails' => 'abuse@aeserver.com; sales@aeserver.com'])
+        ->and($solo->custom_fields)->toBeNull()
+        ->and(Lead::count())->toBe(2);
+});
+
+it('rejects a row whose only addresses are website placeholders', function () {
+    expect(fn () => importRows($this->user, [['Emails' => 'name@company.com; logo@2x.png', 'Name' => 'Junk only']], [
+        'workspace_id' => $this->workspace->id,
+    ], ['email' => 'Emails', 'company' => 'Name']))->toThrow(ValidationException::class);
+
+    expect(Lead::count())->toBe(0);
+});

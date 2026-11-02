@@ -299,7 +299,7 @@ class LeadResource extends Resource
                     ->icon(Heroicon::OutlinedPencilSquare)
                     ->state(fn (Lead $record): ?int => $record->notes_count ?: null)
                     ->tooltip(fn (Lead $record): ?string => $record->latest_note ? str($record->latest_note)->squish()->limit(200)->toString() : null)
-                    ->sortable()
+                    // Not sortable: ordering by a per-lead count would scan every lead's notes on big lists.
                     ->toggleable(),
                 IconColumn::make('is_suppressed')
                     ->label('Suppressed')

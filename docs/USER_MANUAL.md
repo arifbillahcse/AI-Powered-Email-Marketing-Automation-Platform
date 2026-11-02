@@ -291,6 +291,14 @@ after changing DNS, and whenever replies suddenly drop.
   to add them to. Large files import in the background; you get a
   notification when done. Existing leads (same email) are updated, not
   duplicated.
+- **Scraped lists with several emails in one cell** (`info@a.com; sales@a.com;
+  abuse@a.com`) import as **one lead per row**: the first sensible address
+  becomes the lead's email (complaints-desk addresses such as `abuse@`,
+  `privacy@`, `dpo@` and `postmaster@` are skipped when there is another
+  choice), and the others are kept in the lead's custom field
+  `{{other_emails}}`. Website placeholders (`name@company.com`), file names
+  (`logo@2x.png`) and version numbers (`ionicons@4.2.2`) are ignored; a row
+  with nothing usable fails with the other failed rows.
 - **Lead finder:** see [2.8](#28-lead-finder).
 - **API / integrations:** see [Appendix E](#appendix-e-rest-api-and-webhooks).
 
@@ -1004,6 +1012,7 @@ Test a restore occasionally.
 | Campaign launched but nothing sends | Outside the sending window, daily limits reached, mailboxes paused, or the cron isn't running | Open the campaign's **Sending status**; it names the reason. Check System health for the scheduler heartbeat. |
 | "Queued jobs have waited over 5 minutes" | Cron/queue worker not running | Check the cron command and PHP path; on VPS check Horizon/Supervisor. |
 | Mailbox shows **Error** | Wrong password, app password needed, OAuth access revoked, server blocks the login | Edit the mailbox, re-enter credentials or reconnect with Google/Microsoft, **Test connection**. |
+| Mailbox says "The saved password can't be read" | The app's `APP_KEY` changed after the password was saved (a new `key:generate`, or a database copied from another install) | Edit the mailbox, type the SMTP (and IMAP) password again, **Test connection**. Don't run `key:generate` on a live site. |
 | Gmail login fails with the normal password | Google requires an app password for SMTP/IMAP | Create an app password, or use *Sign in with Google*. |
 | Replies don't appear in the Unibox | IMAP not reachable, wrong IMAP settings, or reply sent to another address | Check the mailbox's IMAP error; confirm port 993 is allowed outbound by your host. Only replies to campaign/one-off emails are imported. |
 | Mailbox or campaign **auto-paused** | Bounce rate > 5% or complaint rate > 0.3% in 7 days | Clean the list (verify, remove bad sources), then Resume. |

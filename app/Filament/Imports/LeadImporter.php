@@ -9,6 +9,7 @@ use App\Models\Tag;
 use App\Models\User;
 use App\Services\Billing\Entitlements;
 use App\Support\CustomFieldKey;
+use App\Support\EmailList;
 use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -61,8 +62,16 @@ class LeadImporter extends Importer
             ImportColumn::make('email')
                 ->label('Email')
                 ->requiredMapping()
-                ->guess(['email', 'email address', 'e-mail', 'mail', 'work email'])
-                ->castStateUsing(fn (?string $state): string => mb_strtolower(trim((string) $state)))
+                ->guess(['email', 'emails', 'email address', 'email addresses', 'e-mail', 'mail', 'work email', 'contact email'])
+                // A cell may hold several addresses ("info@a.com; sales@a.com"): the first
+                // sensible one is the lead's email, the rest are kept as {{other_emails}}.
+                ->castStateUsing(function (?string $state): string {
+                    $typed = mb_strtolower(trim((string) $state));
+
+                    // A cell of only placeholders ("name@company.com") is treated as empty;
+                    // other bad values keep failing with "must be a valid email address".
+                    return EmailList::primary($state) ?? (filter_var($typed, FILTER_VALIDATE_EMAIL) ? '' : $typed);
+                })
                 ->rules(['required', 'email:filter', 'max:255'])
                 ->example('jane@acme.com'),
             $text('first_name', 'First name', ['first name', 'firstname', 'first', 'given name'], 100)->example('Jane'),
@@ -144,6 +153,10 @@ class LeadImporter extends Importer
         if ($this->options['keep_extra_columns'] ?? true) {
             $extra = $this->extraColumns();
 
+            if ($others = $this->otherEmails($lead->email)) {
+                $extra['other_emails'] = mb_substr(implode('; ', $others), 0, 1000);
+            }
+
             if ($extra !== []) {
                 $lead->custom_fields = array_merge($lead->custom_fields ?? [], $extra);
             }
@@ -222,6 +235,19 @@ class LeadImporter extends Importer
         }
 
         return $this->checkedWorkspaceId = $workspaceId;
+    }
+
+    /**
+     * Other usable addresses from the same cell as the lead's email.
+     *
+     * @return list<string>
+     */
+    protected function otherEmails(string $primary): array
+    {
+        $header = $this->columnMap['email'] ?? null;
+        $cell = $header ? (string) ($this->originalData[$header] ?? '') : '';
+
+        return array_slice(array_values(array_diff(EmailList::all($cell), [$primary])), 0, 10);
     }
 
     /**
